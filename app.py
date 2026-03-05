@@ -11,6 +11,7 @@ from services.loi_form_data import (
 )
 from services.number_to_words import to_legal_dollar_string, convert_to_words
 from services.document_generator import DocumentGenerator
+import base64
 import os
 
 # ---------------------------------------------------------------------------
@@ -78,64 +79,81 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 
-    /* Document preview styling */
-    .doc-preview {
+    /* Document preview — scrollable page viewer */
+    .doc-scroll {
+        max-height: 85vh;
+        overflow-y: auto;
+        border: 1px solid #555;
+        border-radius: 4px;
+        background: #444;
+        padding: 12px;
+    }
+    .doc-page {
         background: #fff;
         color: #222;
         font-family: 'Times New Roman', Times, serif;
         font-size: 10pt;
         line-height: 1.4;
-        padding: 1.5rem 2rem;
-        border-radius: 4px;
-        max-height: 85vh;
-        overflow-y: auto;
-        border: 1px solid #555;
+        padding: 60px 72px;
+        margin-bottom: 12px;
+        min-height: 792px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        position: relative;
     }
-    .doc-preview p {
+    .doc-page:last-child {
+        margin-bottom: 0;
+    }
+    .doc-page p {
         margin: 0.4em 0;
         text-align: justify;
     }
-    .doc-preview .hdr-right {
+    .doc-page .hdr-right {
         text-align: right;
         font-size: 9pt;
         margin: 0;
     }
-    .doc-preview .addr-line {
+    .doc-page .addr-line {
         margin: 0.1em 0;
     }
-    .doc-preview .re-line {
+    .doc-page .re-line {
         margin: 0.8em 0;
     }
-    .doc-preview .section-item {
+    .doc-page .section-item {
         margin: 0.6em 0;
         padding-left: 3em;
         text-indent: -3em;
     }
-    .doc-preview .section-item .sec-label {
+    .doc-page .section-item .sec-label {
         font-weight: bold;
         text-decoration: underline;
     }
-    .doc-preview .closing-text {
+    .doc-page .closing-text {
         text-indent: 2em;
     }
-    .doc-preview .sig-block {
+    .doc-page .sig-block {
         margin-top: 1.5em;
     }
-    .doc-preview .sig-line {
+    .doc-page .sig-line {
         margin: 0.2em 0;
     }
-    .doc-preview .exhibit-header {
+    .doc-page .exhibit-header {
         text-align: center;
         font-weight: bold;
         margin-top: 1em;
     }
-    .doc-preview .exhibit-center {
+    .doc-page .exhibit-center {
         text-align: center;
     }
-    .doc-preview hr {
+    .doc-page hr {
         border: none;
         border-top: 1px solid #ccc;
         margin: 0.8em 0;
+    }
+    .doc-page .photo-preview {
+        display: block;
+        max-width: 100%;
+        max-height: 500px;
+        margin: 1em auto;
     }
     /* Tracked change styles */
     .tc-del {
@@ -150,7 +168,7 @@ st.markdown("""
         color: #27ae60;
     }
     /* Make preview column sticky */
-    [data-testid="stVerticalBlock"] > div:has(.doc-preview) {
+    [data-testid="stVerticalBlock"] > div:has(.doc-scroll) {
         position: sticky;
         top: 2rem;
     }
@@ -502,7 +520,10 @@ with preview_col:
     lt_days_val = fmt_period(lease_term_days) if lease_term_days > 0 else ""
 
     p = []  # preview parts
-    p.append('<div class="doc-preview">')
+    p.append('<div class="doc-scroll">')
+
+    # ==================== PAGE 1 ====================
+    p.append('<div class="doc-page">')
 
     # -- Header --
     p.append('<div style="display:flex;justify-content:space-between;align-items:flex-start;">')
@@ -625,6 +646,10 @@ with preview_col:
             f'and shall be non-refundable to the Purchaser, subject to a default by Seller under the Purchase Agreement, '
             f'a casualty or a condemnation.</p>'
         )
+
+    # ==================== PAGE 2 ====================
+    p.append('</div>')  # end page 1
+    p.append('<div class="doc-page">')
 
     # -- D. Exclusivity --
     p.append(
@@ -772,6 +797,10 @@ with preview_col:
         'understandings or agreements, whether oral or written.</p>'
     )
 
+    # ==================== PAGE 3 ====================
+    p.append('</div>')  # end page 2
+    p.append('<div class="doc-page">')
+
     # -- Closing paragraph --
     p.append(
         '<p class="closing-text">If the foregoing is acceptable, please indicate by executing a copy of this proposal and returning '
@@ -800,19 +829,28 @@ with preview_col:
             p.append('<p class="sig-line">Name: &nbsp;&nbsp;________________________</p>')
             p.append('<p class="sig-line">Title: &nbsp;&nbsp;________________________</p>')
 
-    # -- Exhibit A --
-    p.append('<hr>')
+    # ==================== PAGE 4: EXHIBIT A ====================
+    p.append('</div>')  # end page 3
+    p.append('<div class="doc-page">')
+
     p.append('<p class="exhibit-header">EXHIBIT A</p>')
-    p.append('<p class="exhibit-center">DEPICTION OF PROPERTY</p>')
-    p.append('<p class="exhibit-center">PARCEL ID NUMBER(S)</p>')
+    p.append('<p class="exhibit-center" style="margin-top:2em;">DEPICTION OF PROPERTY</p>')
+    p.append('<p class="exhibit-center" style="margin-top:1em;">PARCEL ID NUMBER(S)</p>')
     parcel_list = "<br>".join(pid for pid in st.session_state.parcel_ids if pid.strip())
     if parcel_list:
-        p.append(f'<p class="exhibit-center">{parcel_list}</p>')
+        p.append(f'<p class="exhibit-center" style="margin-top:0.5em;">{parcel_list}</p>')
     else:
-        p.append('<p class="exhibit-center"><span class="tc-empty">[]</span></p>')
-    if uploaded_photo:
-        p.append('<p class="exhibit-center"><em>[ Property Photo Attached ]</em></p>')
+        p.append('<p class="exhibit-center" style="margin-top:0.5em;"><span class="tc-empty">[]</span></p>')
 
-    p.append('</div>')
+    # -- Property photo --
+    if uploaded_photo:
+        photo_bytes = uploaded_photo.read()
+        uploaded_photo.seek(0)  # reset for document generation
+        b64 = base64.b64encode(photo_bytes).decode()
+        mime = uploaded_photo.type or "image/jpeg"
+        p.append(f'<img class="photo-preview" src="data:{mime};base64,{b64}" alt="Property Photo">')
+
+    p.append('</div>')  # end page 4
+    p.append('</div>')  # end doc-scroll
 
     st.markdown("\n".join(p), unsafe_allow_html=True)
