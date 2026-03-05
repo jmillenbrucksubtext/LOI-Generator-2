@@ -172,6 +172,11 @@ st.markdown("""
     .doc-page .exhibit-center {
         text-align: center;
     }
+    .doc-page .cont-header {
+        font-size: 9pt;
+        margin-bottom: 1.5em;
+        color: #222;
+    }
     .doc-page hr {
         border: none;
         border-top: 1px solid #ccc;
@@ -678,6 +683,7 @@ with preview_col:
     # ==================== PAGE 2 ====================
     p.append('</div>')  # end page 1
     p.append('<div class="doc-page">')
+    p.append(f'<p class="cont-header"><b>Re:</b> &nbsp;{_vn(property_address, "[Address, City, State]")}</p>')
 
     # -- D. Exclusivity --
     p.append(
@@ -828,6 +834,7 @@ with preview_col:
     # ==================== PAGE 3 ====================
     p.append('</div>')  # end page 2
     p.append('<div class="doc-page">')
+    p.append(f'<p class="cont-header"><b>Re:</b> &nbsp;{_vn(property_address, "[Address, City, State]")}</p>')
 
     # -- Closing paragraph --
     p.append(
@@ -860,6 +867,7 @@ with preview_col:
     # ==================== PAGE 4: EXHIBIT A ====================
     p.append('</div>')  # end page 3
     p.append('<div class="doc-page">')
+    p.append(f'<p class="cont-header"><b>Re:</b> &nbsp;{_vn(property_address, "[Address, City, State]")}</p>')
 
     p.append('<p class="exhibit-header">EXHIBIT A</p>')
     p.append('<p class="exhibit-center" style="margin-top:2em;">DEPICTION OF PROPERTY</p>')
