@@ -239,7 +239,8 @@ with form_col:
     st.markdown('<div class="section-header">Letter Details</div>', unsafe_allow_html=True)
     c1, c2 = st.columns([1, 2])
     with c1:
-        date_val = st.text_input("Date", value=datetime.now().strftime("%B %d, %Y"))
+        _now = datetime.now()
+        date_val = st.text_input("Date", value=f"{_now.strftime('%B')} {_now.day}, {_now.year}")
     with c2:
         property_address = st.text_input("Property Address", placeholder="Address, City, State Zip Code")
 
