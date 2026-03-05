@@ -552,10 +552,10 @@ with preview_col:
 
     # Signature block
     if sig_type == SignatureBlockType.INDIVIDUAL:
-        sig_block = f"""
-        <p class="no-indent" style="margin-top:2em;">Agreed and Accepted:</p>
-        <p class="no-indent" style="margin-top:1.5em;">____________________________<br>{_v(seller_name_sig, "Seller Name")}</p>
-        """
+        sig_block = (
+            f'<p class="no-indent" style="margin-top:2em;">Agreed and Accepted:</p>'
+            f'<p class="no-indent" style="margin-top:1.5em;">____________________________<br>{_v(seller_name_sig, "Seller Name")}</p>'
+        )
     else:
         entities_html = ""
         for ent in st.session_state.entities:
@@ -566,51 +566,42 @@ with preview_col:
     # Parcel IDs
     parcel_list = "<br>".join(p for p in st.session_state.parcel_ids if p.strip()) or "___"
 
-    # Assemble the preview
-    preview_html = f"""
-    <div class="doc-preview">
-        <p class="doc-header">{_v(date_val, "Date")}</p>
-        <p class="doc-header">{_v(seller_addr1, "Seller Entity")}</p>
-        <p class="doc-header">{_v(seller_addr2, "Seller Address")}</p>
-        <p class="doc-header">{_v(seller_addr3, "City, State Zip")}</p>
-        <p class="doc-header" style="margin-top:0.5em;">Attention: {_v(attention_name, "Name")}</p>
+    # Assemble the preview — NO indentation (Markdown treats 4+ spaces as code blocks)
+    parts = []
+    parts.append('<div class="doc-preview">')
+    parts.append(f'<p class="doc-header">{_v(date_val, "Date")}</p>')
+    parts.append(f'<p class="doc-header">{_v(seller_addr1, "Seller Entity")}</p>')
+    parts.append(f'<p class="doc-header">{_v(seller_addr2, "Seller Address")}</p>')
+    parts.append(f'<p class="doc-header">{_v(seller_addr3, "City, State Zip")}</p>')
+    parts.append(f'<p class="doc-header" style="margin-top:0.5em;">Attention: {_v(attention_name, "Name")}</p>')
+    parts.append(f'<p class="doc-re"><b>Re: Letter of Intent &mdash; {_v(property_address, "Property Address")}</b></p>')
+    parts.append(f'<p>Dear {_v(salutation, "Mr./Mrs./Ms.")}:</p>')
+    parts.append(
+        f'<p>This Letter of Intent sets forth the basic terms pursuant to which Subtext LLC, or its assignee '
+        f'(&ldquo;Purchaser&rdquo;), would be willing to enter into a Purchase and Sale Agreement (&ldquo;PSA&rdquo;) with '
+        f'{_v(seller_name, "Seller Name")} (&ldquo;Seller&rdquo;) for the purchase of the property located at '
+        f'{_v(property_address, "Property Address")} (the &ldquo;Property&rdquo;).</p>'
+    )
+    parts.append('<p class="doc-section">Key Terms:</p>')
+    parts.append(f'<p><b>B. Purchase Price.</b> The purchase price shall be {_v(pp_words)} and 00/100 Dollars ({_v(pp_num)}).</p>')
+    parts.append(f'<p>{deposit_para}</p>')
+    if legal_reimb_para:
+        parts.append(legal_reimb_para)
+    parts.append(f'<p>{dd_para}</p>')
+    parts.append(f'<p>{closing_para}</p>')
+    parts.append(f'<p>{comm_para}</p>')
+    if option_para:
+        parts.append(option_para)
+    if lease_para:
+        parts.append(f'<p>{lease_para}</p>')
+    if rollover_para:
+        parts.append(rollover_para)
+    parts.append('<hr>')
+    parts.append('<p class="doc-section">EXHIBIT A</p>')
+    parts.append(f'<p class="no-indent"><b>Parcel ID(s):</b><br>{parcel_list}</p>')
+    if uploaded_photo:
+        parts.append('<p class="no-indent"><em>[ Property Photo Attached ]</em></p>')
+    parts.append(sig_block)
+    parts.append('</div>')
 
-        <p class="doc-re"><b>Re: Letter of Intent — {_v(property_address, "Property Address")}</b></p>
-
-        <p>Dear {_v(salutation, "Mr./Mrs./Ms.")}:</p>
-
-        <p>This Letter of Intent sets forth the basic terms pursuant to which Subtext LLC, or its assignee
-        (&ldquo;Purchaser&rdquo;), would be willing to enter into a Purchase and Sale Agreement (&ldquo;PSA&rdquo;) with
-        {_v(seller_name, "Seller Name")} (&ldquo;Seller&rdquo;) for the purchase of the property located at
-        {_v(property_address, "Property Address")} (the &ldquo;Property&rdquo;).</p>
-
-        <p class="doc-section">Key Terms:</p>
-
-        <p><b>B. Purchase Price.</b> The purchase price shall be {_v(pp_words)} and 00/100 Dollars ({_v(pp_num)}).</p>
-
-        <p>{deposit_para}</p>
-        {legal_reimb_para}
-
-        <p>{dd_para}</p>
-
-        <p>{closing_para}</p>
-
-        <p>{comm_para}</p>
-
-        {option_para}
-
-        {"<p>" + lease_para + "</p>" if lease_para else ""}
-
-        {rollover_para}
-
-        <hr>
-
-        <p class="doc-section">EXHIBIT A</p>
-        <p class="no-indent"><b>Parcel ID(s):</b><br>{parcel_list}</p>
-        {"<p class='no-indent'><em>[ Property Photo Attached ]</em></p>" if uploaded_photo else ""}
-
-        {sig_block}
-    </div>
-    """
-
-    st.markdown(preview_html, unsafe_allow_html=True)
+    st.markdown("\n".join(parts), unsafe_allow_html=True)
