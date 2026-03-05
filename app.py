@@ -505,7 +505,10 @@ with preview_col:
     p.append('<div class="doc-preview">')
 
     # -- Header --
-    p.append('<p class="hdr-right">3000 Locust Street<br>St. Louis, MO 63103<br>Phone 314-721-5559 Fax 314-667-3121</p>')
+    p.append('<div style="display:flex;justify-content:space-between;align-items:flex-start;">')
+    p.append('<img src="https://subtextliving.com/wp-content/uploads/2023/08/subtext-primary-logo.svg" style="height:40px;">')
+    p.append('<div style="text-align:right;font-size:9pt;">3000 Locust Street<br>St. Louis, MO 63103<br>Phone 314-721-5559 Fax 314-667-3121</div>')
+    p.append('</div>')
     p.append('<hr>')
 
     # -- Date --
