@@ -40,9 +40,21 @@ def period_preview(value: int, unit: str = "days"):
         st.markdown(f'<div class="legal-preview">{fmt_period(value, unit)}</div>', unsafe_allow_html=True)
 
 
-def _v(text: str, fallback: str = "___") -> str:
-    """Return text or a placeholder for the preview."""
-    return text.strip() if text.strip() else f'<span style="color:#c1d100">{fallback}</span>'
+def _v(text: str, placeholder: str = "___") -> str:
+    """Show tracked-change style: strikethrough old + red new if filled, green placeholder if not."""
+    if text and text.strip():
+        return (
+            f'<span class="tc-del">{placeholder}</span>'
+            f'<span class="tc-ins">{text.strip()}</span>'
+        )
+    return f'<span class="tc-empty">{placeholder}</span>'
+
+
+def _vn(text: str, placeholder: str = "___") -> str:
+    """Show just the value (no tracked-change strikethrough) — for when placeholder isn't meaningful."""
+    if text and text.strip():
+        return f'<span class="tc-ins">{text.strip()}</span>'
+    return f'<span class="tc-empty">{placeholder}</span>'
 
 
 # ---------------------------------------------------------------------------
@@ -71,48 +83,71 @@ st.markdown("""
         background: #fff;
         color: #222;
         font-family: 'Times New Roman', Times, serif;
-        font-size: 11pt;
-        line-height: 1.5;
-        padding: 2rem 2.5rem;
+        font-size: 10pt;
+        line-height: 1.4;
+        padding: 1.5rem 2rem;
         border-radius: 4px;
         max-height: 85vh;
         overflow-y: auto;
         border: 1px solid #555;
     }
     .doc-preview p {
-        margin: 0.6em 0;
-        text-indent: 2em;
+        margin: 0.4em 0;
+        text-align: justify;
     }
-    .doc-preview p.no-indent {
-        text-indent: 0;
+    .doc-preview .hdr-right {
+        text-align: right;
+        font-size: 9pt;
+        margin: 0;
     }
-    .doc-preview .doc-header {
-        text-align: left;
-        text-indent: 0;
-        margin-bottom: 0.3em;
+    .doc-preview .addr-line {
+        margin: 0.1em 0;
     }
-    .doc-preview .doc-section {
-        font-weight: bold;
-        text-indent: 0;
-        margin-top: 1em;
-    }
-    .doc-preview .doc-re {
-        text-indent: 0;
+    .doc-preview .re-line {
         margin: 0.8em 0;
     }
-    .doc-preview .doc-sig {
-        text-indent: 0;
-        margin-top: 2em;
+    .doc-preview .section-item {
+        margin: 0.6em 0;
+        padding-left: 3em;
+        text-indent: -3em;
     }
-    .doc-preview .highlight {
-        background: #fffde0;
-        padding: 0 2px;
-        border-radius: 2px;
+    .doc-preview .section-item .sec-label {
+        font-weight: bold;
+        text-decoration: underline;
+    }
+    .doc-preview .closing-text {
+        text-indent: 2em;
+    }
+    .doc-preview .sig-block {
+        margin-top: 1.5em;
+    }
+    .doc-preview .sig-line {
+        margin: 0.2em 0;
+    }
+    .doc-preview .exhibit-header {
+        text-align: center;
+        font-weight: bold;
+        margin-top: 1em;
+    }
+    .doc-preview .exhibit-center {
+        text-align: center;
     }
     .doc-preview hr {
         border: none;
         border-top: 1px solid #ccc;
-        margin: 1em 0;
+        margin: 0.8em 0;
+    }
+    /* Tracked change styles */
+    .tc-del {
+        color: #c0392b;
+        text-decoration: line-through;
+        font-size: 0.95em;
+    }
+    .tc-ins {
+        color: #c0392b;
+    }
+    .tc-empty {
+        color: #27ae60;
     }
     /* Make preview column sticky */
     [data-testid="stVerticalBlock"] > div:has(.doc-preview) {
@@ -450,158 +485,331 @@ with form_col:
 with preview_col:
     st.markdown("**Live Preview**")
 
-    # Build preview values
-    pp_str = fmt_dollar(purchase_price) if purchase_price > 0 else "___"
-    pp_words = convert_to_words(int(purchase_price)) if purchase_price > 0 else "___"
-    pp_num = f"${int(purchase_price):,}" if purchase_price > 0 else "$___"
-    init_dep_str = fmt_dollar(initial_deposit) if initial_deposit > 0 else "___"
-    add_dep_str = fmt_dollar(additional_deposit) if additional_deposit > 0 else "___"
-    monthly_str = fmt_dollar(monthly_release) if monthly_release > 0 else "___"
+    # --- Build tracked-change values ---
+    pp_words_val = convert_to_words(int(purchase_price)) if purchase_price > 0 else ""
+    pp_num_val = f"{int(purchase_price):,}" if purchase_price > 0 else ""
+    init_dep_val = fmt_dollar(initial_deposit) if initial_deposit > 0 else ""
+    add_dep_val = fmt_dollar(additional_deposit) if additional_deposit > 0 else ""
+    monthly_val = fmt_dollar(monthly_release) if monthly_release > 0 else ""
+    dd_period_val = fmt_period(dd_days) if dd_days > 0 else ""
+    ga_period_val = fmt_period(ga_days) if ga_days > 0 else ""
+    asm_period_val = fmt_period(assemblage_days) if assemblage_days > 0 else ""
+    cl_period_val = fmt_period(closing_days) if closing_days > 0 else ""
+    ext_months_val = fmt_period(closing_ext_months, "months") if closing_ext_months > 0 else ""
+    ext_dep_val = fmt_dollar(ext_deposit) if ext_deposit > 0 else ""
+    monthly_ext_val = fmt_dollar(monthly_closing_ext_deposit) if monthly_closing_ext_deposit > 0 else ""
+    lr_val = fmt_dollar(legal_reimb_amount) if legal_reimb_amount > 0 else ""
+    lt_days_val = fmt_period(lease_term_days) if lease_term_days > 0 else ""
 
-    # Deposit paragraph based on scenario
+    p = []  # preview parts
+    p.append('<div class="doc-preview">')
+
+    # -- Header --
+    p.append('<p class="hdr-right">3000 Locust Street<br>St. Louis, MO 63103<br>Phone 314-721-5559 Fax 314-667-3121</p>')
+    p.append('<hr>')
+
+    # -- Date --
+    p.append(f'<p>{_v(date_val, "[Date]")}</p>')
+
+    # -- Address block --
+    p.append(f'<p class="addr-line">{_v(seller_addr1, "[____________________]")}</p>')
+    p.append(f'<p class="addr-line">{_v(seller_addr2, "[____________________]")}</p>')
+    p.append(f'<p class="addr-line">{_v(seller_addr3, "[____________________]")}</p>')
+    p.append(f'<p class="addr-line">Attn: {_v(attention_name, "[_______________]")}</p>')
+
+    # -- Re: line --
+    p.append(f'<p class="re-line"><b>Re: &nbsp;&nbsp;Proposal for the acquisition of {_v(property_address, "[Address, City, State]")} (&ldquo;Property&rdquo;)</b></p>')
+
+    # -- Salutation --
+    p.append(f'<p>{_v(salutation, "[Mr./Mrs./Ms._________]")}:</p>')
+
+    # -- Opening paragraph --
+    seller_display = _v(seller_name, "[______________]")
+    prop_display = _v(property_address, "[Address, City, State]")
+    p.append(
+        f'<p style="text-indent:2em;">On behalf of Subtext Acquisitions, LLC, a Missouri limited liability company, or its assignee '
+        f'(&ldquo;Purchaser&rdquo;), we are pleased to submit this non-binding proposal to purchase the above-referenced '
+        f'Property from {seller_display} (&ldquo;Seller&rdquo;) on the terms and conditions set forth herein.</p>'
+    )
+
+    p.append('<p style="text-indent:2em;">The terms of the proposed sale are as follows:</p>')
+
+    # -- A. Property --
+    p.append(
+        '<p class="section-item"><b>A.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Property.</span> '
+        'The proposal is for the Property described herein together with all improvements, rights of way, '
+        'easements, hereditaments and appurtenances in any way related to or benefiting the Property. '
+        'The Property is legally described and generally depicted on <u>Exhibit A</u> attached hereto.</p>'
+    )
+
+    # -- B. Purchase Price --
+    pp_words_tc = _v(pp_words_val, "[_________________]") if pp_words_val else '<span class="tc-empty">[_________________]</span>'
+    pp_num_tc = _v(pp_num_val, "[_________]") if pp_num_val else '<span class="tc-empty">[_________]</span>'
+    p.append(
+        f'<p class="section-item"><b>B.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Purchase Price.</span> '
+        f'{pp_words_tc} and 00/100 Dollars (${pp_num_tc}.00) '
+        f'(the &ldquo;Purchase Price&rdquo;), which shall be paid at the Closing (defined below) by cash, '
+        f'certified check or wire transfer.</p>'
+    )
+
+    # -- C. Deposit --
+    init_tc = _v(init_dep_val, "[Ten Thousand and 00/100 Dollars ($10,000.00)]")
+    add_tc = _v(add_dep_val, "[Ten Thousand and 00/100 Dollars ($10,000.00)]")
+    monthly_tc = _v(monthly_val, "[Five Thousand and 00/100 Dollars ($5,000.00)]")
+
     if deposit_structure == DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD:
-        deposit_para = (
-            f'<b>C. Deposit.</b> Within five (5) business days after mutual execution of the PSA, '
-            f'Purchaser shall deposit {_v(init_dep_str)} as an initial deposit. '
-            f'An additional {_v(add_dep_str)} shall become non-refundable upon expiration of '
-            f'the Governmental Approvals Period.'
+        deposit_text = (
+            f'Within five (5) business days following mutual execution of the Purchase Agreement '
+            f'(as defined below), {init_tc} (&ldquo;Initial Deposit&rdquo;) shall be delivered to First American Title Insurance, '
+            f'National Commercial Services (&ldquo;Title Company&rdquo;). If, prior to the expiration of the Due Diligence Period '
+            f'(as defined below), Purchaser determines not to pursue the transaction, Purchaser may terminate the Purchase Agreement, '
+            f'and the Initial Deposit shall be fully and promptly refunded to Purchaser. Otherwise, Purchaser shall deposit an additional '
+            f'sum into escrow with the Title Company in the amount of {add_tc} (&ldquo;Additional Deposit&rdquo;, which together with '
+            f'the Initial Deposit, is referred to herein as the (&ldquo;Earnest Money&rdquo;). The Earnest Money shall be non-refundable '
+            f'to the Purchaser subject to (i) Purchaser&rsquo;s receipt of Governmental Approvals, during the Governmental Approvals Period '
+            f'(as defined below), (ii) a default by Seller under the Purchase Agreement, or (iii) a casualty or a condemnation, each as '
+            f'shall be further defined in the Purchase Agreement. If the Purchaser has not obtained the Governmental Approvals during the '
+            f'Governmental Approvals Period, Purchaser may terminate the Purchase Agreement, and the Earnest Money shall be fully and promptly '
+            f'refunded to Purchaser. Otherwise, the Earnest Money shall become non-refundable to the Purchaser upon expiration of the '
+            f'Governmental Approvals Period (except as expressly set forth in the Purchase Agreement). The Earnest Money shall be applied '
+            f'towards the Purchase Price at Closing.'
         )
     elif deposit_structure == DepositStructure.DUE_DILIGENCE_GOING_HARD:
-        deposit_para = (
-            f'<b>C. Deposit.</b> Within five (5) business days after mutual execution of the PSA, '
-            f'Purchaser shall deposit {_v(init_dep_str)} as an initial deposit. '
-            f'An additional {_v(add_dep_str)} shall become non-refundable upon expiration of '
-            f'the Due Diligence Period.'
+        deposit_text = (
+            f'Within five (5) business days following mutual execution of the Purchase Agreement '
+            f'(as defined below), {init_tc} (&ldquo;Initial Deposit&rdquo;) shall be delivered to First American Title Insurance, '
+            f'National Commercial Services (&ldquo;Title Company&rdquo;). If, prior to the expiration of the Due Diligence Period '
+            f'(as defined below), Purchaser determines not to pursue the transaction, Purchaser may terminate the Purchase Agreement, '
+            f'and the Initial Deposit shall be fully and promptly refunded to Purchaser. Otherwise, upon waiver of the Due Diligence Period, '
+            f'the Initial Deposit shall become non-refundable to the Purchaser, and Purchaser shall deposit an additional sum into escrow '
+            f'with the Title Company in the amount of {add_tc} (&ldquo;Additional Deposit&rdquo;, which together with the Initial Deposit, '
+            f'is referred to herein as the (&ldquo;Earnest Money&rdquo;). The Additional Deposit shall be non-refundable to the Purchaser '
+            f'subject to (i) Purchaser&rsquo;s receipt of the Governmental Approvals during the Governmental Approvals Period (as defined below), '
+            f'(ii) a default by Seller under the Purchase Agreement, or (iii) a casualty or a condemnation, each as shall be further defined '
+            f'in the Purchase Agreement. If Purchaser has not obtained the Governmental Approvals during the Governmental Approvals Period, then '
+            f'Purchaser may terminate the Purchase Agreement, and the Additional Deposit shall be fully and promptly refunded to Purchaser. '
+            f'Otherwise, the Additional Deposit shall become non-refundable to the Purchaser upon expiration of the Governmental Approvals Period '
+            f'(except as expressly set forth in the Purchase Agreement). The Earnest Money shall be applied towards the Purchase Price at Closing.'
         )
-    else:
-        deposit_para = (
-            f'<b>C. Deposit.</b> Within five (5) business days after mutual execution of the PSA, '
-            f'Purchaser shall deposit {_v(init_dep_str)} as an initial deposit. '
-            f'Thereafter, {_v(monthly_str)} shall be released monthly after Due Diligence.'
+    else:  # Monthly Going Hard
+        deposit_text = (
+            f'Within five (5) business days following mutual execution of the Purchase Agreement '
+            f'(as defined below), {init_tc} (the &ldquo;Initial Deposit&rdquo;) shall be delivered to First American Title Insurance, '
+            f'National Commercial Services (the &ldquo;Title Company&rdquo;). If, prior to the expiration of the Due Diligence Period '
+            f'(as defined below), Purchaser determines not to pursue the transaction, Purchaser may terminate the Purchase Agreement and '
+            f'the Initial Deposit shall be fully and promptly refunded to Purchaser. Otherwise, Purchaser shall deposit an additional sum '
+            f'into escrow with the Title Company in the amount of {add_tc} (the &ldquo;Additional Deposit&rdquo;, which together with '
+            f'the Initial Deposit, is referred to herein as the &ldquo;Earnest Money&rdquo;) and shall be non-refundable to the Purchaser, '
+            f'subject to (i) Purchaser&rsquo;s receipt of the Governmental Approvals during the Governmental Approvals Period (as defined below), '
+            f'(ii) a default by Seller under the Purchase Agreement, or (iii) a casualty or a condemnation, each as shall be further defined '
+            f'in the Purchase Agreement. On the 1st of each month following waiver of the Due Diligence Period, {monthly_tc} of the Earnest Money '
+            f'(collectively, the &ldquo;Monthly Releases&rdquo;), shall become non-refundable to the Purchaser, subject to a default by Seller '
+            f'under the Purchase Agreement, and shall be immediately released to the Seller by Title Company. If Purchaser has not obtained the '
+            f'Governmental Approvals during the Governmental Approvals Period, Purchaser may terminate the Purchase Agreement and the Earnest Money, '
+            f'less the Monthly Releases paid to date, shall be fully and promptly refunded to Purchaser. Otherwise, the Earnest Money shall become '
+            f'non-refundable to the Purchaser upon expiration of the Governmental Approvals Period (except as expressly set forth in the Purchase '
+            f'Agreement). The Earnest Money shall be applied towards the Purchase Price at Closing.'
         )
 
-    # Legal reimbursement
-    legal_reimb_para = ""
+    p.append(f'<p class="section-item"><b>C.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Deposit.</span> {deposit_text}</p>')
+
+    # -- Legal Reimbursement (optional) --
     if include_legal_reimb:
-        lr_str = fmt_dollar(legal_reimb_amount) if legal_reimb_amount > 0 else "___"
-        legal_reimb_para = f'<p>Additionally, Purchaser shall pay a legal reimbursement fee of {_v(lr_str)} at PSA execution.</p>'
-
-    # Due Diligence paragraph
-    dd_period = fmt_period(dd_days) if dd_days > 0 else "___"
-    ga_period = fmt_period(ga_days) if ga_days > 0 else "___"
-    if dd_type == DueDiligenceType.STANDARD:
-        dd_para = (
-            f'<b>E. Due Diligence and Governmental Approvals.</b> Purchaser shall have a due diligence period of '
-            f'{_v(dd_period)} from the Effective Date. The Governmental Approvals Period shall be '
-            f'{_v(ga_period)} from the Effective Date.'
-        )
-    else:
-        asm_period = fmt_period(assemblage_days) if assemblage_days > 0 else "___"
-        dd_para = (
-            f'<b>E. Due Diligence and Governmental Approvals.</b> Purchaser shall have an assemblage period of '
-            f'{_v(asm_period)} from the Effective Date, followed by a due diligence period of '
-            f'{_v(dd_period)}. The Governmental Approvals Period shall be '
-            f'{_v(ga_period)} from the Effective Date.'
+        lr_tc = _v(lr_val, "[Five Thousand and 00/100 Dollars ($5,000.00)]")
+        p.append(
+            f'<p style="text-indent:2em;"><b>Legal Reimbursement Fee.</b> Upon mutual execution of the Purchase Agreement, '
+            f'{lr_tc} shall be immediately released to the Seller by the Title Company (&ldquo;Legal Reimbursement Fee&rdquo;) '
+            f'and shall be non-refundable to the Purchaser, subject to a default by Seller under the Purchase Agreement, '
+            f'a casualty or a condemnation.</p>'
         )
 
-    # Closing paragraph
-    cl_period = fmt_period(closing_days) if closing_days > 0 else "___"
-    closing_para = f'<b>F. Closing.</b> Closing shall occur within {_v(cl_period)} after expiration of the Governmental Approvals Period.'
-    if include_closing_ext:
-        ext_months = fmt_period(closing_ext_months, "months") if closing_ext_months > 0 else "___"
-        ext_dep_str = fmt_dollar(monthly_closing_ext_deposit) if monthly_closing_ext_deposit > 0 else "___"
-        closing_para += (
-            f' Purchaser shall have the option to extend closing for {_v(ext_months)} '
-            f'with a monthly deposit of {_v(ext_dep_str)}.'
-        )
-
-    # Commission paragraph
-    if commission_type == CommissionType.SELLER_PAYS_LISTING_AGENT:
-        comm_para = '<b>G. Commissions.</b> Seller shall be responsible for paying any commission owed to the listing agent.'
-    elif commission_type == CommissionType.SUBTEXT_PAYS:
-        comm_para = f'<b>G. Commissions.</b> Purchaser shall pay the commission to {_v(broker_name)}.'
-    else:
-        comm_para = '<b>G. Commissions.</b> No brokers are involved in this transaction.'
-
-    # Option to extend
-    option_para = ""
-    if include_option_extend:
-        ext_d_str = fmt_dollar(ext_deposit) if ext_deposit > 0 else "___"
-        option_para = (
-            f'<p><b>H. Option to Extend.</b> Purchaser shall have the option to extend the Governmental Approvals Period '
-            f'by depositing an additional {_v(ext_d_str)}.</p>'
-        )
-
-    # Leases paragraph
-    lease_parts = []
-    if include_existing_leases:
-        lease_parts.append(f'Purchaser acknowledges existing leases with an end date of {_v(lease_end_date)}.')
-    if include_delivered_vacant:
-        lease_parts.append('The Property shall be delivered vacant at closing.')
-    if include_lease_termination:
-        lt_days = fmt_period(lease_term_days) if lease_term_days > 0 else "___"
-        lease_parts.append(f'Seller shall terminate all leases within {_v(lt_days)} prior to closing.')
-    if include_negotiate_tenants:
-        lease_parts.append('Purchaser shall have the right to negotiate with existing tenants prior to closing.')
-    lease_para = f'<b>I. Leases.</b> {" ".join(lease_parts)}' if lease_parts else ""
-
-    # Seller rollover
-    rollover_para = ""
-    if include_seller_rollover:
-        rollover_para = '<p>Seller shall have the option to contribute land and receive LP level returns in the project.</p>'
-
-    # Signature block
-    if sig_type == SignatureBlockType.INDIVIDUAL:
-        sig_block = (
-            f'<p class="no-indent" style="margin-top:2em;">Agreed and Accepted:</p>'
-            f'<p class="no-indent" style="margin-top:1.5em;">____________________________<br>{_v(seller_name_sig, "Seller Name")}</p>'
-        )
-    else:
-        entities_html = ""
-        for ent in st.session_state.entities:
-            name = ent["company_name"] or "___"
-            entities_html += f'<p class="no-indent" style="margin-top:1.5em;"><b>{name}</b><br>By: ____________________________<br>Name: ____________________________<br>Title: ____________________________</p>'
-        sig_block = f'<p class="no-indent" style="margin-top:2em;">Agreed and Accepted:</p>{entities_html}'
-
-    # Parcel IDs
-    parcel_list = "<br>".join(p for p in st.session_state.parcel_ids if p.strip()) or "___"
-
-    # Assemble the preview — NO indentation (Markdown treats 4+ spaces as code blocks)
-    parts = []
-    parts.append('<div class="doc-preview">')
-    parts.append(f'<p class="doc-header">{_v(date_val, "Date")}</p>')
-    parts.append(f'<p class="doc-header">{_v(seller_addr1, "Seller Entity")}</p>')
-    parts.append(f'<p class="doc-header">{_v(seller_addr2, "Seller Address")}</p>')
-    parts.append(f'<p class="doc-header">{_v(seller_addr3, "City, State Zip")}</p>')
-    parts.append(f'<p class="doc-header" style="margin-top:0.5em;">Attention: {_v(attention_name, "Name")}</p>')
-    parts.append(f'<p class="doc-re"><b>Re: Letter of Intent &mdash; {_v(property_address, "Property Address")}</b></p>')
-    parts.append(f'<p>Dear {_v(salutation, "Mr./Mrs./Ms.")}:</p>')
-    parts.append(
-        f'<p>This Letter of Intent sets forth the basic terms pursuant to which Subtext LLC, or its assignee '
-        f'(&ldquo;Purchaser&rdquo;), would be willing to enter into a Purchase and Sale Agreement (&ldquo;PSA&rdquo;) with '
-        f'{_v(seller_name, "Seller Name")} (&ldquo;Seller&rdquo;) for the purchase of the property located at '
-        f'{_v(property_address, "Property Address")} (the &ldquo;Property&rdquo;).</p>'
+    # -- D. Exclusivity --
+    p.append(
+        '<p class="section-item"><b>D.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Exclusivity; Seller&rsquo;s Covenants.</span> '
+        'Upon mutual execution of this proposal, Purchaser shall have thirty (30) days (&ldquo;Exclusivity Period&rdquo;) to negotiate '
+        'on an exclusive basis a definitive purchase agreement for the Property (&ldquo;Purchase Agreement&rdquo;), which Purchase Agreement '
+        'shall be prepared by Purchaser and provided to Seller promptly after execution of this proposal. During the Exclusivity Period and '
+        'while the Purchase Agreement is in effect, subject to Paragraph I, Seller shall (a) not negotiate with any other party or sell or '
+        'lease, offer to sell or lease, accept an offer to purchase or lease or solicit or respond to solicitations for the sale or lease of '
+        'any portion of or interest in the Property, (b) not execute any contracts, leases, easements or other documents or grant any rights to '
+        'or affecting the Property or take any other material actions affecting the Property without Purchaser&rsquo;s prior written consent, and '
+        '(c) continue to manage and maintain the Property as it is currently being managed and maintained.</p>'
     )
-    parts.append('<p class="doc-section">Key Terms:</p>')
-    parts.append(f'<p><b>B. Purchase Price.</b> The purchase price shall be {_v(pp_words)} and 00/100 Dollars ({_v(pp_num)}).</p>')
-    parts.append(f'<p>{deposit_para}</p>')
-    if legal_reimb_para:
-        parts.append(legal_reimb_para)
-    parts.append(f'<p>{dd_para}</p>')
-    parts.append(f'<p>{closing_para}</p>')
-    parts.append(f'<p>{comm_para}</p>')
-    if option_para:
-        parts.append(option_para)
-    if lease_para:
-        parts.append(f'<p>{lease_para}</p>')
-    if rollover_para:
-        parts.append(rollover_para)
-    parts.append('<hr>')
-    parts.append('<p class="doc-section">EXHIBIT A</p>')
-    parts.append(f'<p class="no-indent"><b>Parcel ID(s):</b><br>{parcel_list}</p>')
-    if uploaded_photo:
-        parts.append('<p class="no-indent"><em>[ Property Photo Attached ]</em></p>')
-    parts.append(sig_block)
-    parts.append('</div>')
 
-    st.markdown("\n".join(parts), unsafe_allow_html=True)
+    # -- E. Due Diligence --
+    dd_tc = _v(dd_period_val, "[one hundred twenty (120)]")
+    ga_tc = _v(ga_period_val, "[one hundred fifty (150)]")
+
+    if dd_type == DueDiligenceType.STANDARD:
+        dd_text = (
+            f'Purchaser shall have a period of {dd_tc} days after mutual execution of the Purchase Agreement '
+            f'(&ldquo;Due Diligence Period&rdquo;) to inspect and investigate the Property to the extent deemed necessary or desirable '
+            f'by Purchaser in its sole and absolute discretion. Upon expiration of the Due Diligence Period, Purchaser shall have a period of '
+            f'{ga_tc} days (&ldquo;Governmental Approvals Period&rdquo;) to procure all zoning approvals, permits, consents, authorizations, '
+            f'variances, waivers, licenses, certificates and other approvals from any governmental or quasi-governmental authority with respect '
+            f'to the Property necessary or desirable, in Purchaser&rsquo;s sole and absolute discretion (collectively, &ldquo;Governmental Approvals&rdquo;).'
+        )
+        p.append(f'<p class="section-item"><b>E.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Due Diligence and Governmental Approvals.</span> {dd_text}</p>')
+    else:
+        asm_tc = _v(asm_period_val, "[ninety (90)]")
+        dd_text = (
+            f'Purchaser shall have a period of {asm_tc} days after mutual execution of the Purchase Agreement '
+            f'(&ldquo;Assemblage Period&rdquo;) to execute purchase agreements with all necessary adjacent parcels, in Purchaser&rsquo;s '
+            f'sole and absolute discretion. Upon expiration of the Assemblage Period, Purchaser shall have a period of {dd_tc} days '
+            f'(&ldquo;Due Diligence Period&rdquo;) to inspect and investigate the Property to the extent deemed necessary or desirable by '
+            f'Purchaser in its sole and absolute discretion. Upon expiration of the Due Diligence Period, Purchaser shall have a period of '
+            f'{ga_tc} days (&ldquo;Governmental Approvals Period&rdquo;) to procure all zoning approvals, permits, consents, authorizations, '
+            f'variances, waivers, licenses, certificates and other approvals from any governmental or quasi-governmental authority with respect '
+            f'to the Property necessary or desirable, in Purchaser&rsquo;s sole and absolute discretion (collectively, &ldquo;Governmental Approvals&rdquo;).'
+        )
+        p.append(f'<p class="section-item"><b>E.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Assemblage; Due Diligence; Governmental Approvals.</span> {dd_text}</p>')
+
+    # -- F. Closing --
+    cl_tc = _v(cl_period_val, "[thirty (30)]")
+    closing_text = f'Within {cl_tc} days after the expiration of the Governmental Approvals Period (&ldquo;Closing&rdquo;).'
+
+    if include_closing_ext:
+        ext_m_tc = _v(ext_months_val, "[six (6)]")
+        ext_d_tc = _v(monthly_ext_val, "[Twenty-Five Thousand and 00/100 Dollars ($25,000.00)]")
+        closing_text += (
+            f' Notwithstanding the foregoing, Purchaser shall have the right to extend the Closing on a month-to-month basis '
+            f'for up to a total of {ext_m_tc} months (each a &ldquo;Closing Extension&rdquo;) by delivering to the Title Company '
+            f'a deposit in the amount of {ext_d_tc} for each month of extension (&ldquo;Monthly Closing Extension Deposit&rdquo;). '
+            f'The Monthly Closing Extension Deposits shall be non-refundable to the Purchaser when made, subject to a default by '
+            f'Seller under the Purchase Agreement, a casualty or a condemnation, but shall be applicable to the Purchase Price.'
+        )
+
+    p.append(f'<p class="section-item"><b>F.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Closing.</span> {closing_text}</p>')
+
+    # -- G. Commissions --
+    if commission_type == CommissionType.SELLER_PAYS_LISTING_AGENT:
+        comm_text = ('Seller to pay the commission set forth in the listing agreement at Closing, and Purchaser and Seller '
+                     'agree no other brokerage commissions are due as a result of this transaction.')
+    elif commission_type == CommissionType.SUBTEXT_PAYS:
+        broker_tc = _v(broker_name, "[_____________]")
+        comm_text = (f'Purchaser to pay a commission at Closing to {broker_tc} pursuant to a separate agreement, '
+                     f'and Purchaser and Seller agree no other brokerage commissions are due as a result of this transaction.')
+    else:
+        comm_text = 'Purchaser and Seller agree that no brokerage commission is due as a result of this transaction.'
+
+    p.append(f'<p class="section-item"><b>G.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Commissions.</span> {comm_text}</p>')
+
+    # -- H. Option to Extend (optional) --
+    if include_option_extend:
+        ext_dep_tc = _v(ext_dep_val, "[Five Thousand and 00/100 Dollars ($5,000.00)]")
+        p.append(
+            f'<p class="section-item"><b>H.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Option to Extend.</span> '
+            f'Purchaser shall have a total of two (2) sixty (60) day extension options (each an &ldquo;Option to Extend&rdquo;). '
+            f'Each Option to Extend may be applied to the Due Diligence Period or the Governmental Approvals Period by delivering '
+            f'written notice to the Seller prior to the expiration of such term (&ldquo;Extension Notice&rdquo;) and delivering to the '
+            f'Title Company an amount equal to {ext_dep_tc} (&ldquo;Extension Deposit&rdquo;) within five (5) business days of the '
+            f'Extension Notice. The Extension Deposits shall be non-refundable to the Purchaser when made, subject to a default by '
+            f'Seller under the Purchase Agreement but shall be applicable to the Purchase Price.</p>'
+        )
+
+    # -- I. Leases --
+    lease_sentences = []
+    if include_existing_leases:
+        le_tc = _v(lease_end_date, "[May 31, 2026]")
+        lease_sentences.append(
+            f'Purchaser and Seller agree there are existing leases on the Property and that all existing leases end on or before {le_tc}.'
+        )
+    if include_delivered_vacant:
+        lease_sentences.append(
+            'Seller agrees to terminate, effective as of Closing, all leases such that the Property shall be delivered vacant at Closing, '
+            'and Seller shall be responsible for all monetary penalties/fees and or settlements related to the termination of leases.'
+        )
+    if include_lease_termination:
+        lt_tc = _v(lt_days_val, "[sixty (60)]")
+        lease_sentences.append(
+            f'All new leases and renewals of existing leases entered into after the date hereof, shall include a {lt_tc} day '
+            f'termination provision that shall be further defined in the Purchase Agreement.'
+        )
+    if include_negotiate_tenants:
+        lease_sentences.append(
+            'Upon mutual execution of this proposal, Purchaser shall have the right to negotiate directly with the existing tenants '
+            'regarding a potential lease amendment, provided that Seller shall have the right to facilitate such introductions.'
+        )
+
+    if lease_sentences:
+        p.append(f'<p class="section-item"><b>I.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Leases.</span> {" ".join(lease_sentences)}</p>')
+
+    # -- Seller Rollover (optional) --
+    if include_seller_rollover:
+        p.append(
+            '<p class="section-item"><span class="sec-label">Seller Rollover Option for Project Equity.</span> '
+            'In concert with the execution of the Purchase Agreement, Seller shall have the right, but not an obligation, to invest '
+            'up to one hundred (100%) percent of his/her/its/their sale price as equity in the Purchaser&rsquo;s intended project '
+            '(&ldquo;Project&rdquo;), with such investment being through a limited liability company or other entity type selected by '
+            'the Purchaser in good faith, that will be an indirect owner of the Property, whereby Seller shall be a passive investor '
+            '(no day to day or major decision rights) in the Project, but with Seller being entitled to substantially the same '
+            '&ldquo;limited partner&rdquo; returns on equity as the to be selected capital partner for the Project will receive '
+            '(&ldquo;Capital Partner&rdquo;).</p>'
+        )
+
+    # -- J. Confidentiality --
+    p.append(
+        '<p class="section-item"><b>J.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Confidentiality.</span> '
+        'During the Exclusivity Period and, while the Purchase Agreement is in effect, Purchaser and Seller shall keep all negotiations '
+        'and communications between the parties regarding the potential purchase of the Property confidential and shall not disclose '
+        'any matter related to such negotiations and communications to any third party.</p>'
+    )
+
+    # -- K. Governing Law --
+    p.append(
+        '<p class="section-item"><b>K.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Governing Law.</span> '
+        'This proposal shall be governed by the laws of the State of Missouri, without giving effect to conflict of laws principles.</p>'
+    )
+
+    # -- L. Miscellaneous --
+    p.append(
+        '<p class="section-item"><b>L.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Miscellaneous.</span> '
+        'This proposal may be signed in counterparts with the same effect as if executed on a single document. This proposal constitutes '
+        'the entire agreement between the parties concerning the subject matter hereof and supersedes all prior representations, '
+        'understandings or agreements, whether oral or written.</p>'
+    )
+
+    # -- Closing paragraph --
+    p.append(
+        '<p class="closing-text">If the foregoing is acceptable, please indicate by executing a copy of this proposal and returning '
+        'it to the undersigned. We look forward to working with you on this transaction.</p>'
+    )
+
+    # -- Signature --
+    p.append('<p class="sig-block">Sincerely,</p>')
+    p.append('<p class="sig-line" style="margin-top:2em;">Subtext Acquisitions, LLC</p>')
+    p.append('<p class="sig-line" style="margin-top:2em;">____________________________________</p>')
+    p.append('<p class="sig-line">Richard Birner, Vice President of Land Acquisitions</p>')
+
+    # -- Seller signature --
+    p.append('<p class="sig-block" style="margin-top:1.5em;">Agreed and Accepted by Seller this _____ day of ___________, 2026</p>')
+
+    if sig_type == SignatureBlockType.INDIVIDUAL:
+        p.append('<p class="sig-line" style="margin-top:2em;">____________________________________</p>')
+        seller_sig_tc = _vn(seller_name_sig, "[SELLER NAME]")
+        p.append(f'<p class="sig-line">{seller_sig_tc}</p>')
+    else:
+        for ent in st.session_state.entities:
+            name = ent["company_name"]
+            company_tc = _vn(name, "[COMPANY NAME]")
+            p.append(f'<p class="sig-line" style="margin-top:1.5em;"><b>{company_tc}</b></p>')
+            p.append('<p class="sig-line">By: &nbsp;&nbsp;________________________</p>')
+            p.append('<p class="sig-line">Name: &nbsp;&nbsp;________________________</p>')
+            p.append('<p class="sig-line">Title: &nbsp;&nbsp;________________________</p>')
+
+    # -- Exhibit A --
+    p.append('<hr>')
+    p.append('<p class="exhibit-header">EXHIBIT A</p>')
+    p.append('<p class="exhibit-center">DEPICTION OF PROPERTY</p>')
+    p.append('<p class="exhibit-center">PARCEL ID NUMBER(S)</p>')
+    parcel_list = "<br>".join(pid for pid in st.session_state.parcel_ids if pid.strip())
+    if parcel_list:
+        p.append(f'<p class="exhibit-center">{parcel_list}</p>')
+    else:
+        p.append('<p class="exhibit-center"><span class="tc-empty">[]</span></p>')
+    if uploaded_photo:
+        p.append('<p class="exhibit-center"><em>[ Property Photo Attached ]</em></p>')
+
+    p.append('</div>')
+
+    st.markdown("\n".join(p), unsafe_allow_html=True)
