@@ -688,8 +688,7 @@ class DocumentGenerator:
         if target_para is None:
             return
 
-        # Determine image type and get dimensions
-        content_type = form.property_photo_content_type or "image/jpeg"
+        # Get image dimensions using Pillow
         from PIL import Image as PILImage
         img = PILImage.open(io.BytesIO(form.property_photo_bytes))
         px_width, px_height = img.size
@@ -710,7 +709,8 @@ class DocumentGenerator:
             img_height_emu = max_height_emu
             img_width_emu = int(img_width_emu * ratio)
 
-        # Add image part
+        # Determine content type for the image part
+        content_type = form.property_photo_content_type or "image/jpeg"
         if "png" in content_type:
             img_type = "image/png"
         elif "gif" in content_type:
@@ -720,16 +720,20 @@ class DocumentGenerator:
         else:
             img_type = "image/jpeg"
 
-        image_part = doc.part.package.part_rels.get_or_add_ext_rel(
-            RT.IMAGE, None
-        ) if False else None  # We'll use a different approach
-
-        # Use python-docx internals to add image
+        # Add image as a related part using OPC layer
         from docx.opc.part import Part
-        from docx.image.image import Image as DocxImage
+        from docx.opc.constants import RELATIONSHIP_TYPE as RT
 
-        image_stream = io.BytesIO(form.property_photo_bytes)
-        image_part, rel_id = doc.part.get_or_add_image_part(image_stream)
+        image_part_name = "/word/media/property_photo" + os.path.splitext(
+            form.property_photo_filename or "photo.jpg")[1]
+
+        # Create the image part
+        from docx.opc.package import OpcPackage
+        from docx.opc.packuri import PackURI
+
+        part_name = PackURI(image_part_name)
+        image_part = Part(part_name, img_type, form.property_photo_bytes, None)
+        rel_id = doc.part.relate_to(image_part, RT.IMAGE)
 
         filename = form.property_photo_filename or "photo.jpg"
 
@@ -767,13 +771,6 @@ class DocumentGenerator:
             f'</wp:inline>'
         )
         inline_elem = etree.fromstring(inline_xml)
-
-        # Create the drawing element
-        drawing_elem = etree.SubElement(
-            etree.SubElement(_make_empty_paragraph(), _qn("w:r")),
-            _qn("w:drawing")
-        )
-        # Actually, build it properly:
 
         # Create blank paragraphs
         blank1 = _make_empty_paragraph()
