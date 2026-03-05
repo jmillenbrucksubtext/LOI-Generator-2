@@ -33,7 +33,12 @@ def fmt_dollar(amount: float) -> str:
 
 def dollar_preview(amount: float):
     if amount > 0:
-        st.markdown(f'<div class="legal-preview">{fmt_dollar(amount)}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="legal-preview">'
+            f'<b>${amount:,.2f}</b> &mdash; {fmt_dollar(amount)}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
 
 def period_preview(value: int, unit: str = "days"):
@@ -222,7 +227,7 @@ with form_col:
 
     # --- B. Purchase Price ---
     st.markdown('<div class="section-header">B. Purchase Price</div>', unsafe_allow_html=True)
-    purchase_price = st.number_input("Purchase Price ($)", min_value=0.0, value=0.0, step=1000.0, format="%,.2f")
+    purchase_price = st.number_input("Purchase Price ($)", min_value=0.0, value=0.0, step=1000.0, format="%.2f")
     dollar_preview(purchase_price)
 
     # --- C. Deposit ---
@@ -233,16 +238,16 @@ with form_col:
 
     cd1, cd2 = st.columns(2)
     with cd1:
-        initial_deposit = st.number_input("Initial Deposit ($)", min_value=0.0, value=10000.0, step=1000.0, format="%,.2f")
+        initial_deposit = st.number_input("Initial Deposit ($)", min_value=0.0, value=10000.0, step=1000.0, format="%.2f")
         dollar_preview(initial_deposit)
     with cd2:
         if deposit_structure in (DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD, DepositStructure.DUE_DILIGENCE_GOING_HARD):
-            additional_deposit = st.number_input("Additional Deposit ($)", min_value=0.0, value=10000.0, step=1000.0, format="%,.2f")
+            additional_deposit = st.number_input("Additional Deposit ($)", min_value=0.0, value=10000.0, step=1000.0, format="%.2f")
             dollar_preview(additional_deposit)
         else:
             additional_deposit = 10000.0
         if deposit_structure == DepositStructure.MONTHLY_GOING_HARD:
-            monthly_release = st.number_input("Monthly Release Amount ($)", min_value=0.0, value=5000.0, step=1000.0, format="%,.2f")
+            monthly_release = st.number_input("Monthly Release Amount ($)", min_value=0.0, value=5000.0, step=1000.0, format="%.2f")
             dollar_preview(monthly_release)
         else:
             monthly_release = 5000.0
@@ -250,7 +255,7 @@ with form_col:
     st.divider()
     include_legal_reimb = st.checkbox("Include Legal Reimbursement Fee")
     if include_legal_reimb:
-        legal_reimb_amount = st.number_input("Legal Reimbursement Amount ($)", min_value=0.0, value=5000.0, step=1000.0, format="%,.2f")
+        legal_reimb_amount = st.number_input("Legal Reimbursement Amount ($)", min_value=0.0, value=5000.0, step=1000.0, format="%.2f")
         dollar_preview(legal_reimb_amount)
     else:
         legal_reimb_amount = 5000.0
@@ -287,7 +292,7 @@ with form_col:
             closing_ext_months = st.number_input("Closing Extension Duration (months)", min_value=0, value=6, step=1)
             period_preview(closing_ext_months, "months")
         with cf2:
-            monthly_closing_ext_deposit = st.number_input("Monthly Closing Extension Deposit ($)", min_value=0.0, value=25000.0, step=1000.0, format="%,.2f")
+            monthly_closing_ext_deposit = st.number_input("Monthly Closing Extension Deposit ($)", min_value=0.0, value=25000.0, step=1000.0, format="%.2f")
             dollar_preview(monthly_closing_ext_deposit)
     else:
         closing_ext_months = 6
@@ -308,7 +313,7 @@ with form_col:
     st.markdown('<div class="section-header">H. Option to Extend</div>', unsafe_allow_html=True)
     include_option_extend = st.checkbox("Include Option to Extend", value=True)
     if include_option_extend:
-        ext_deposit = st.number_input("Extension Deposit Amount ($)", min_value=0.0, value=5000.0, step=1000.0, format="%,.2f")
+        ext_deposit = st.number_input("Extension Deposit Amount ($)", min_value=0.0, value=5000.0, step=1000.0, format="%.2f")
         dollar_preview(ext_deposit)
     else:
         ext_deposit = 5000.0
