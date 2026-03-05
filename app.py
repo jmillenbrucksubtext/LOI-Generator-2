@@ -119,11 +119,14 @@ st.markdown("""
         font-family: 'Times New Roman', Times, serif;
         font-size: 10pt;
         line-height: 1.4;
-        padding: 60px 72px;
-        margin-bottom: 12px;
-        min-height: 792px;
+        /* US Letter: 8.5"×11" at 96dpi = 816×1056px, 1" margins = 96px */
+        width: 816px;
+        min-height: 1056px;
+        padding: 96px;
+        margin: 0 auto 12px auto;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         position: relative;
+        box-sizing: border-box;
     }
     .doc-page:last-child {
         margin-bottom: 0;
