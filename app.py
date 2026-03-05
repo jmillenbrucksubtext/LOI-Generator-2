@@ -31,12 +31,32 @@ def fmt_dollar(amount: float) -> str:
     return to_legal_dollar_string(amount)
 
 
+def money_input(label: str, default: float = 0.0, key: str = None) -> float:
+    """Text input that displays dollar amounts with comma separators."""
+    input_key = key or f"money_{label}"
+    val_key = f"_mval_{input_key}"
+
+    if val_key not in st.session_state:
+        st.session_state[val_key] = default
+        st.session_state[input_key] = f"{default:,.2f}"
+
+    def _reformat():
+        raw = st.session_state[input_key]
+        try:
+            parsed = float(raw.replace(",", "").replace("$", "").strip())
+            st.session_state[val_key] = max(0.0, parsed)
+        except (ValueError, TypeError):
+            pass
+        st.session_state[input_key] = f"{st.session_state[val_key]:,.2f}"
+
+    st.text_input(label, key=input_key, on_change=_reformat)
+    return st.session_state[val_key]
+
+
 def dollar_preview(amount: float):
     if amount > 0:
         st.markdown(
-            f'<div class="legal-preview">'
-            f'<b>${amount:,.2f}</b> &mdash; {fmt_dollar(amount)}'
-            f'</div>',
+            f'<div class="legal-preview">{fmt_dollar(amount)}</div>',
             unsafe_allow_html=True,
         )
 
@@ -227,7 +247,7 @@ with form_col:
 
     # --- B. Purchase Price ---
     st.markdown('<div class="section-header">B. Purchase Price</div>', unsafe_allow_html=True)
-    purchase_price = st.number_input("Purchase Price ($)", min_value=0.0, value=0.0, step=1000.0, format="%.2f")
+    purchase_price = money_input("Purchase Price ($)", default=0.0, key="purchase_price")
     dollar_preview(purchase_price)
 
     # --- C. Deposit ---
@@ -238,16 +258,16 @@ with form_col:
 
     cd1, cd2 = st.columns(2)
     with cd1:
-        initial_deposit = st.number_input("Initial Deposit ($)", min_value=0.0, value=10000.0, step=1000.0, format="%.2f")
+        initial_deposit = money_input("Initial Deposit ($)", default=10000.0, key="initial_deposit")
         dollar_preview(initial_deposit)
     with cd2:
         if deposit_structure in (DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD, DepositStructure.DUE_DILIGENCE_GOING_HARD):
-            additional_deposit = st.number_input("Additional Deposit ($)", min_value=0.0, value=10000.0, step=1000.0, format="%.2f")
+            additional_deposit = money_input("Additional Deposit ($)", default=10000.0, key="additional_deposit")
             dollar_preview(additional_deposit)
         else:
             additional_deposit = 10000.0
         if deposit_structure == DepositStructure.MONTHLY_GOING_HARD:
-            monthly_release = st.number_input("Monthly Release Amount ($)", min_value=0.0, value=5000.0, step=1000.0, format="%.2f")
+            monthly_release = money_input("Monthly Release Amount ($)", default=5000.0, key="monthly_release")
             dollar_preview(monthly_release)
         else:
             monthly_release = 5000.0
@@ -255,7 +275,7 @@ with form_col:
     st.divider()
     include_legal_reimb = st.checkbox("Include Legal Reimbursement Fee")
     if include_legal_reimb:
-        legal_reimb_amount = st.number_input("Legal Reimbursement Amount ($)", min_value=0.0, value=5000.0, step=1000.0, format="%.2f")
+        legal_reimb_amount = money_input("Legal Reimbursement Amount ($)", default=5000.0, key="legal_reimb")
         dollar_preview(legal_reimb_amount)
     else:
         legal_reimb_amount = 5000.0
@@ -292,7 +312,7 @@ with form_col:
             closing_ext_months = st.number_input("Closing Extension Duration (months)", min_value=0, value=6, step=1)
             period_preview(closing_ext_months, "months")
         with cf2:
-            monthly_closing_ext_deposit = st.number_input("Monthly Closing Extension Deposit ($)", min_value=0.0, value=25000.0, step=1000.0, format="%.2f")
+            monthly_closing_ext_deposit = money_input("Monthly Closing Extension Deposit ($)", default=25000.0, key="monthly_closing_ext")
             dollar_preview(monthly_closing_ext_deposit)
     else:
         closing_ext_months = 6
@@ -313,7 +333,7 @@ with form_col:
     st.markdown('<div class="section-header">H. Option to Extend</div>', unsafe_allow_html=True)
     include_option_extend = st.checkbox("Include Option to Extend", value=True)
     if include_option_extend:
-        ext_deposit = st.number_input("Extension Deposit Amount ($)", min_value=0.0, value=5000.0, step=1000.0, format="%.2f")
+        ext_deposit = money_input("Extension Deposit Amount ($)", default=5000.0, key="ext_deposit")
         dollar_preview(ext_deposit)
     else:
         ext_deposit = 5000.0
