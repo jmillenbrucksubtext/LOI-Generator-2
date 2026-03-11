@@ -592,11 +592,16 @@ with preview_col:
 
     # -- Opening paragraph --
     seller_display = _v(seller_name, "[______________]")
-    prop_display = _v(property_address, "[Address, City, State]")
+    # Use "collectively" when multiple company entities
+    entity_count = len([e for e in st.session_state.entities if e["company_name"].strip()]) if sig_type == SignatureBlockType.COMPANY_ENTITY else 0
+    if entity_count > 1:
+        seller_label = '(collectively, the &ldquo;Seller&rdquo;)'
+    else:
+        seller_label = '(&ldquo;Seller&rdquo;)'
     p.append(
         f'<p style="text-indent:2em;">On behalf of Subtext Acquisitions, LLC, a Missouri limited liability company, or its assignee '
         f'(&ldquo;Purchaser&rdquo;), we are pleased to submit this non-binding proposal to purchase the above-referenced '
-        f'Property from {seller_display} (&ldquo;Seller&rdquo;) on the terms and conditions set forth herein.</p>'
+        f'Property from {seller_display} {seller_label} on the terms and conditions set forth herein.</p>'
     )
 
     p.append('<p style="text-indent:2em;">The terms of the proposed sale are as follows:</p>')
