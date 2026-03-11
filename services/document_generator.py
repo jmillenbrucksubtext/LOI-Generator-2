@@ -373,6 +373,14 @@ class DocumentGenerator:
                     (marker_idx + len(marker), len(text) - marker_idx - len(marker), False),
                 ]
                 self._rebuild_paragraph_with_scenario(para, text, segments, now)
+                # Remove numId=0 override so the paragraph inherits auto-numbering from its style
+                p_pr = para.find(_qn("w:pPr"))
+                if p_pr is not None:
+                    num_pr = p_pr.find(_qn("w:numPr"))
+                    if num_pr is not None:
+                        num_id = num_pr.find(_qn("w:numId"))
+                        if num_id is not None and num_id.get(_qn("w:val")) == "0":
+                            p_pr.remove(num_pr)
             else:
                 self._delete_entire_paragraph(para, now)
             return
