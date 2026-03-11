@@ -295,6 +295,11 @@ class DocumentGenerator:
                         num_id = num_pr.find(_qn("w:numId"))
                         if num_id is not None and num_id.get(_qn("w:val")) == "0":
                             p_pr.remove(num_pr)
+                    # Fix indentation to match other sections (left=0, firstLine=720)
+                    ind = p_pr.find(_qn("w:ind"))
+                    if ind is not None:
+                        ind.set(_qn("w:left"), "0")
+                        ind.set(_qn("w:firstLine"), "720")
                 # Strip yellow highlighting from content runs
                 for run in content_para.iterchildren(_qn("w:r")):
                     rpr = run.find(_qn("w:rPr"))
