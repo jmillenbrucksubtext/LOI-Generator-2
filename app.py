@@ -777,11 +777,18 @@ with preview_col:
 
     p.append(f'<p class="section-item"><b>G.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Commissions.</span> {comm_text}</p>')
 
-    # -- H. Option to Extend (optional) --
+    # Dynamic section lettering from H onward (optional sections shift subsequent letters)
+    _sec = [7]  # 0=A .. 7=H — mutable list for closure
+    def _sl():
+        letter = chr(ord('A') + _sec[0])
+        _sec[0] += 1
+        return f'<b>{letter}.</b> &nbsp;&nbsp;&nbsp;'
+
+    # -- Option to Extend (optional) --
     if include_option_extend:
         ext_dep_tc = _v(ext_dep_val, "[Five Thousand and 00/100 Dollars ($5,000.00)]")
         p.append(
-            f'<p class="section-item"><b>H.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Option to Extend.</span> '
+            f'<p class="section-item">{_sl()}<span class="sec-label">Option to Extend.</span> '
             f'Purchaser shall have a total of two (2) sixty (60) day extension options (each an &ldquo;Option to Extend&rdquo;). '
             f'Each Option to Extend may be applied to the Due Diligence Period or the Governmental Approvals Period by delivering '
             f'written notice to the Seller prior to the expiration of such term (&ldquo;Extension Notice&rdquo;) and delivering to the '
@@ -818,12 +825,12 @@ with preview_col:
         )
 
     if lease_sentences:
-        p.append(f'<p class="section-item"><b>I.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Leases.</span> {" ".join(lease_sentences)}</p>')
+        p.append(f'<p class="section-item">{_sl()}<span class="sec-label">Leases.</span> {" ".join(lease_sentences)}</p>')
 
     # -- Seller Rollover (optional) --
     if include_seller_rollover:
         p.append(
-            '<p class="section-item"><span class="sec-label">Seller Rollover Option for Project Equity.</span> '
+            f'<p class="section-item">{_sl()}<span class="sec-label">Seller Rollover Option for Project Equity.</span> '
             'In concert with the execution of the Purchase Agreement, Seller shall have the right, but not an obligation, to invest '
             'up to one hundred (100%) percent of his/her/its/their sale price as equity in the Purchaser&rsquo;s intended project '
             '(&ldquo;Project&rdquo;), with such investment being through a limited liability company or other entity type selected by '
@@ -834,9 +841,10 @@ with preview_col:
             'Purchaser or its affiliates that are approved by the Capital Partner or Project&rsquo;s lender.</p>'
         )
 
-    # -- J. Confidentiality --
+    # -- Confidentiality --
+    _conf_letter = _sl()
     p.append(
-        '<p class="section-item"><b>J.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Confidentiality.</span> '
+        f'<p class="section-item">{_conf_letter}<span class="sec-label">Confidentiality.</span> '
         'During the Exclusivity Period and, while the Purchase Agreement is in effect, Purchaser and Seller shall keep all negotiations '
         'and communications between the parties regarding the potential purchase of the Property confidential and shall not disclose '
         'any matter related to such negotiations and communications to any third party. The parties hereto may disclose this proposal '
@@ -844,15 +852,15 @@ with preview_col:
         'investors or lenders, each of whom shall be directed to uphold similar standards of confidentiality.</p>'
     )
 
-    # -- K. Governing Law --
+    # -- Governing Law --
     p.append(
-        '<p class="section-item"><b>K.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Governing Law.</span> '
+        f'<p class="section-item">{_sl()}<span class="sec-label">Governing Law.</span> '
         'This proposal shall be governed by the laws of the State of Missouri, without giving effect to conflict of laws principles.</p>'
     )
 
-    # -- L. Miscellaneous --
+    # -- Miscellaneous --
     p.append(
-        '<p class="section-item"><b>L.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Miscellaneous.</span> '
+        f'<p class="section-item">{_sl()}<span class="sec-label">Miscellaneous.</span> '
         'This proposal may be signed in counterparts with the same effect as if executed on a single document. This proposal constitutes '
         'the entire agreement between the parties concerning the subject matter hereof and supersedes all prior representations, '
         'understandings or agreements, whether oral or written. This proposal may be modified only by a written instrument executed '
