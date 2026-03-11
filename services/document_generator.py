@@ -23,6 +23,7 @@ from services.loi_form_data import (
     LoiFormData,
     DepositStructure,
     DueDiligenceType,
+    ClosingExtensionType,
     CommissionType,
     SignatureBlockType,
 )
@@ -174,18 +175,40 @@ class DocumentGenerator:
                 continue
 
             marker_idx = text.index(marker)
-            if form.include_closing_extension:
+            if form.closing_extension_type == ClosingExtensionType.NONE:
+                # Delete the marker and everything after it
+                segments = [
+                    (0, marker_idx, False),
+                    (marker_idx, len(text) - marker_idx, True),
+                ]
+                self._rebuild_paragraph_with_scenario(para, text, segments, now)
+            elif form.closing_extension_type == ClosingExtensionType.MONTH_TO_MONTH:
+                # Keep the template text as-is (it's already MtM), just delete marker
                 segments = [
                     (0, marker_idx, False),
                     (marker_idx, len(marker), True),
                     (marker_idx + len(marker), len(text) - marker_idx - len(marker), False),
                 ]
+                self._rebuild_paragraph_with_scenario(para, text, segments, now)
             else:
+                # Single extension — delete marker and MtM text, insert single-extension text
                 segments = [
                     (0, marker_idx, False),
                     (marker_idx, len(text) - marker_idx, True),
                 ]
-            self._rebuild_paragraph_with_scenario(para, text, segments, now)
+                self._rebuild_paragraph_with_scenario(para, text, segments, now)
+                # Build single extension text with placeholders for replacement
+                months_val = _format_period(form.closing_extension_months) if form.closing_extension_months else "six (6)"
+                deposit_val = to_legal_dollar_string(form.monthly_closing_extension_deposit) if form.monthly_closing_extension_deposit else "Twenty-Five Thousand and 00/100 Dollars ($25,000.00)"
+                single_text = (
+                    f' Notwithstanding the foregoing, Purchaser shall have the right to extend the Closing for a period of '
+                    f'{months_val} months (the \u201cClosing Extension\u201d) by delivering to the Title Company '
+                    f'a deposit in the amount of {deposit_val} (the \u201cClosing Extension Deposit\u201d). '
+                    f'The Closing Extension Deposit shall be non-refundable to the Purchaser when made, subject to a default by '
+                    f'Seller under the Purchase Agreement, a casualty or a condemnation, but shall be applicable to the Purchase Price.'
+                )
+                # Insert as tracked-change addition
+                self._append_inserted_text(para, single_text, now)
             return
 
     def _handle_commission_scenario(self, body, form: LoiFormData, now: str):
@@ -542,7 +565,7 @@ class DocumentGenerator:
             m.append(("[_________________]", words))
             m.append(("[_________]", number))
 
-        if form.include_closing_extension and form.monthly_closing_extension_deposit is not None:
+        if form.closing_extension_type == ClosingExtensionType.MONTH_TO_MONTH and form.monthly_closing_extension_deposit is not None:
             m.append((
                 "[Twenty-Five Thousand and 00/100 Dollars ($25,000.00)]",
                 to_legal_dollar_string(form.monthly_closing_extension_deposit),
@@ -556,7 +579,7 @@ class DocumentGenerator:
             m.append(("[ninety (90)]", _format_period(form.assemblage_days)))
         if form.closing_days is not None:
             m.append(("[thirty (30)]", _format_period(form.closing_days)))
-        if form.include_closing_extension and form.closing_extension_months is not None:
+        if form.closing_extension_type == ClosingExtensionType.MONTH_TO_MONTH and form.closing_extension_months is not None:
             m.append(("[six (6)]", _format_period(form.closing_extension_months)))
 
         if form.include_existing_leases:
@@ -734,6 +757,34 @@ class DocumentGenerator:
                     t = etree.SubElement(run_elem, _qn("w:t"))
                     t.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
                     t.text = text
+
+    def _append_inserted_text(self, para, text: str, now: str):
+        """Append text to a paragraph as a tracked-change insertion (w:ins)."""
+        # Get run properties from the last existing run for consistent formatting
+        runs = list(para.iterchildren(_qn("w:r")))
+        last_rpr = None
+        if runs:
+            last_rpr = _get_run_properties(runs[-1])
+        # Also check inside w:del elements for run properties
+        if last_rpr is None:
+            for del_elem in para.iterchildren(_qn("w:del")):
+                for run in del_elem.iterchildren(_qn("w:r")):
+                    last_rpr = _get_run_properties(run)
+
+        ins_elem = etree.SubElement(para, _qn("w:ins"))
+        ins_elem.set(_qn("w:author"), self._author)
+        ins_elem.set(_qn("w:date"), now)
+        ins_elem.set(_qn("w:id"), self._next_rev_id())
+        run_elem = etree.SubElement(ins_elem, _qn("w:r"))
+        if last_rpr is not None:
+            props_copy = copy.deepcopy(last_rpr)
+            hl = props_copy.find(_qn("w:highlight"))
+            if hl is not None:
+                props_copy.remove(hl)
+            run_elem.append(props_copy)
+        t = etree.SubElement(run_elem, _qn("w:t"))
+        t.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+        t.text = text
 
     def _delete_entire_paragraph(self, para, now: str):
         text = _get_paragraph_text(para)

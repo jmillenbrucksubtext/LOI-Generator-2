@@ -20,6 +20,12 @@ class CommissionType(Enum):
     NO_BROKERS = "No Brokers Involved"
 
 
+class ClosingExtensionType(Enum):
+    NONE = "No Closing Extension"
+    MONTH_TO_MONTH = "Month-to-Month Extensions"
+    SINGLE = "One Closing Extension"
+
+
 class SignatureBlockType(Enum):
     INDIVIDUAL = "Individual Seller"
     COMPANY_ENTITY = "Company / Entity"
@@ -79,7 +85,7 @@ class LoiFormData:
     deposit_structure: DepositStructure = DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD
     include_legal_reimbursement: bool = False
     due_diligence_type: DueDiligenceType = DueDiligenceType.STANDARD
-    include_closing_extension: bool = False
+    closing_extension_type: ClosingExtensionType = ClosingExtensionType.NONE
     commission_type: CommissionType = CommissionType.SELLER_PAYS_LISTING_AGENT
     include_option_to_extend: bool = True
     num_extension_options: Optional[int] = 2

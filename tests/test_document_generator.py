@@ -19,6 +19,7 @@ from services.loi_form_data import (
     LoiFormData,
     DepositStructure,
     DueDiligenceType,
+    ClosingExtensionType,
     CommissionType,
     SignatureBlockType,
     SignatureEntity,
@@ -118,7 +119,7 @@ def _base_form() -> LoiFormData:
         deposit_structure=DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD,
         include_legal_reimbursement=False,
         due_diligence_type=DueDiligenceType.STANDARD,
-        include_closing_extension=False,
+        closing_extension_type=ClosingExtensionType.NONE,
         commission_type=CommissionType.SELLER_PAYS_LISTING_AGENT,
         include_option_to_extend=True,
         include_existing_leases=True,
@@ -229,7 +230,7 @@ def test_due_diligence_scenarios():
 
 def test_closing_extension():
     form1 = _base_form()
-    form1.include_closing_extension = True
+    form1.closing_extension_type = ClosingExtensionType.MONTH_TO_MONTH
     form1.closing_extension_months = 6
     form1.monthly_closing_extension_deposit = 25000
     body1, _ = _generate_and_extract(form1)
@@ -237,7 +238,7 @@ def test_closing_extension():
     _assert("Closing Ext: Extension months in doc", "six (6)" in text1)
 
     form2 = _base_form()
-    form2.include_closing_extension = False
+    form2.closing_extension_type = ClosingExtensionType.NONE
     body2, _ = _generate_and_extract(form2)
     vis2 = _get_visible_text(body2)
     _assert("Closing Ext: No extension - no stale placeholder", "[six (6)]" not in vis2)
@@ -385,7 +386,7 @@ def test_number_to_words():
 def test_explicit_guards():
     # ClosingExtensionMonths when disabled
     form = _base_form()
-    form.include_closing_extension = False
+    form.closing_extension_type = ClosingExtensionType.NONE
     form.closing_extension_months = 12
     form.monthly_closing_extension_deposit = 50000
     body, _ = _generate_and_extract(form)

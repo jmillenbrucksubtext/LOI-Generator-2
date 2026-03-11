@@ -21,6 +21,7 @@ from services.loi_form_data import (
     LoiFormData,
     DepositStructure,
     DueDiligenceType,
+    ClosingExtensionType,
     CommissionType,
     SignatureBlockType,
     SignatureEntity,
@@ -295,7 +296,7 @@ def build_ui_preview_text(form: LoiFormData) -> list:
     cl_val = fmt_period_val(form.closing_days) if form.closing_days else "[thirty (30)]"
     closing_text = f'Within {cl_val} days after the expiration of the Governmental Approvals Period (\u201cClosing\u201d).'
 
-    if form.include_closing_extension:
+    if form.closing_extension_type == ClosingExtensionType.MONTH_TO_MONTH:
         ext_m = fmt_period_val(form.closing_extension_months) if form.closing_extension_months else "[six (6)]"
         ext_d = fmt_dollar(form.monthly_closing_extension_deposit) if form.monthly_closing_extension_deposit else "[Twenty-Five Thousand and 00/100 Dollars ($25,000.00)]"
         closing_text += (
@@ -303,6 +304,16 @@ def build_ui_preview_text(form: LoiFormData) -> list:
             f'for up to a total of {ext_m} months (each a \u201cClosing Extension\u201d) by delivering to the Title Company '
             f'a deposit in the amount of {ext_d} for each month of extension (\u201cMonthly Closing Extension Deposit\u201d). '
             f'The Monthly Closing Extension Deposits shall be non-refundable to the Purchaser when made, subject to a default by '
+            f'Seller under the Purchase Agreement, a casualty or a condemnation, but shall be applicable to the Purchase Price.'
+        )
+    elif form.closing_extension_type == ClosingExtensionType.SINGLE:
+        ext_m = fmt_period_val(form.closing_extension_months) if form.closing_extension_months else "[six (6)]"
+        ext_d = fmt_dollar(form.monthly_closing_extension_deposit) if form.monthly_closing_extension_deposit else "[Twenty-Five Thousand and 00/100 Dollars ($25,000.00)]"
+        closing_text += (
+            f' Notwithstanding the foregoing, Purchaser shall have the right to extend the Closing for a period of '
+            f'{ext_m} months (the \u201cClosing Extension\u201d) by delivering to the Title Company '
+            f'a deposit in the amount of {ext_d} (the \u201cClosing Extension Deposit\u201d). '
+            f'The Closing Extension Deposit shall be non-refundable to the Purchaser when made, subject to a default by '
             f'Seller under the Purchase Agreement, a casualty or a condemnation, but shall be applicable to the Purchase Price.'
         )
     lines.append(f"F. Closing. {closing_text}")
@@ -574,7 +585,7 @@ if __name__ == "__main__":
         due_diligence_days=120,
         governmental_approvals_days=150,
         closing_days=30,
-        include_closing_extension=False,
+        closing_extension_type=ClosingExtensionType.NONE,
         commission_type=CommissionType.SELLER_PAYS_LISTING_AGENT,
         include_option_to_extend=True,
         extension_deposit_amount=5000,
@@ -611,7 +622,7 @@ if __name__ == "__main__":
         governmental_approvals_days=150,
         assemblage_days=90,
         closing_days=45,
-        include_closing_extension=True,
+        closing_extension_type=ClosingExtensionType.MONTH_TO_MONTH,
         closing_extension_months=6,
         monthly_closing_extension_deposit=25000,
         commission_type=CommissionType.SUBTEXT_PAYS,
@@ -656,7 +667,7 @@ if __name__ == "__main__":
         due_diligence_days=90,
         governmental_approvals_days=120,
         closing_days=30,
-        include_closing_extension=False,
+        closing_extension_type=ClosingExtensionType.NONE,
         commission_type=CommissionType.NO_BROKERS,
         include_option_to_extend=False,
         include_existing_leases=False,

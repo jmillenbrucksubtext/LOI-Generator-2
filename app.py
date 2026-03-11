@@ -5,6 +5,7 @@ from services.loi_form_data import (
     LoiFormData,
     DepositStructure,
     DueDiligenceType,
+    ClosingExtensionType,
     CommissionType,
     SignatureBlockType,
     SignatureEntity,
@@ -350,14 +351,17 @@ with form_col:
     closing_days = st.number_input("Closing Period (days)", min_value=0, value=30, step=1)
     period_preview(closing_days)
 
-    include_closing_ext = st.checkbox("Include Closing Extension")
-    if include_closing_ext:
+    closing_ext_options = [e.value for e in ClosingExtensionType]
+    closing_ext_choice = st.radio("Closing Extension", closing_ext_options, index=0, horizontal=True)
+    closing_ext_type = ClosingExtensionType(closing_ext_choice)
+    if closing_ext_type != ClosingExtensionType.NONE:
         cf1, cf2 = st.columns(2)
         with cf1:
-            closing_ext_months = st.number_input("Closing Extension Duration (months)", min_value=0, value=6, step=1)
+            closing_ext_months = st.number_input("Closing Extension Duration (months)", min_value=1, value=6, step=1)
             period_preview(closing_ext_months, "months")
         with cf2:
-            monthly_closing_ext_deposit = money_input("Monthly Closing Extension Deposit ($)", default=25000.0, key="monthly_closing_ext")
+            dep_label = "Monthly Closing Extension Deposit ($)" if closing_ext_type == ClosingExtensionType.MONTH_TO_MONTH else "Closing Extension Deposit ($)"
+            monthly_closing_ext_deposit = money_input(dep_label, default=25000.0, key="monthly_closing_ext")
             dollar_preview(monthly_closing_ext_deposit)
     else:
         closing_ext_months = 6
@@ -498,7 +502,7 @@ with form_col:
                 deposit_structure=deposit_structure,
                 include_legal_reimbursement=include_legal_reimb,
                 due_diligence_type=dd_type,
-                include_closing_extension=include_closing_ext,
+                closing_extension_type=closing_ext_type,
                 commission_type=commission_type,
                 include_option_to_extend=True,
                 num_extension_options=num_extensions,
@@ -754,7 +758,7 @@ with preview_col:
     cl_tc = _v(cl_period_val, "[thirty (30)]")
     closing_text = f'Within {cl_tc} days after the expiration of the Governmental Approvals Period (&ldquo;Closing&rdquo;).'
 
-    if include_closing_ext:
+    if closing_ext_type == ClosingExtensionType.MONTH_TO_MONTH:
         ext_m_tc = _v(ext_months_val, "[six (6)]")
         ext_d_tc = _v(monthly_ext_val, "[Twenty-Five Thousand and 00/100 Dollars ($25,000.00)]")
         closing_text += (
@@ -762,6 +766,16 @@ with preview_col:
             f'for up to a total of {ext_m_tc} months (each a &ldquo;Closing Extension&rdquo;) by delivering to the Title Company '
             f'a deposit in the amount of {ext_d_tc} for each month of extension (&ldquo;Monthly Closing Extension Deposit&rdquo;). '
             f'The Monthly Closing Extension Deposits shall be non-refundable to the Purchaser when made, subject to a default by '
+            f'Seller under the Purchase Agreement, a casualty or a condemnation, but shall be applicable to the Purchase Price.'
+        )
+    elif closing_ext_type == ClosingExtensionType.SINGLE:
+        ext_m_tc = _v(ext_months_val, "[six (6)]")
+        ext_d_tc = _v(monthly_ext_val, "[Twenty-Five Thousand and 00/100 Dollars ($25,000.00)]")
+        closing_text += (
+            f' Notwithstanding the foregoing, Purchaser shall have the right to extend the Closing for a period of '
+            f'{ext_m_tc} months (the &ldquo;Closing Extension&rdquo;) by delivering to the Title Company '
+            f'a deposit in the amount of {ext_d_tc} (the &ldquo;Closing Extension Deposit&rdquo;). '
+            f'The Closing Extension Deposit shall be non-refundable to the Purchaser when made, subject to a default by '
             f'Seller under the Purchase Agreement, a casualty or a condemnation, but shall be applicable to the Purchase Price.'
         )
 
