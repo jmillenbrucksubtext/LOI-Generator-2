@@ -670,7 +670,12 @@ class DocumentGenerator:
                 for text, props in sub_runs:
                     run_elem = etree.SubElement(para, _qn("w:r"))
                     if props is not None:
-                        run_elem.append(copy.deepcopy(props))
+                        props_copy = copy.deepcopy(props)
+                        # Strip yellow highlighting from kept runs (template instructions use it)
+                        hl = props_copy.find(_qn("w:highlight"))
+                        if hl is not None:
+                            props_copy.remove(hl)
+                        run_elem.append(props_copy)
                     t = etree.SubElement(run_elem, _qn("w:t"))
                     t.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
                     t.text = text
