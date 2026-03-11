@@ -545,15 +545,18 @@ with preview_col:
     init_dep_val = fmt_dollar(initial_deposit) if initial_deposit > 0 else ""
     add_dep_val = fmt_dollar(additional_deposit) if additional_deposit > 0 else ""
     monthly_val = fmt_dollar(monthly_release) if monthly_release > 0 else ""
-    dd_period_val = fmt_period(dd_days) if dd_days > 0 else ""
-    ga_period_val = fmt_period(ga_days) if ga_days > 0 else ""
-    asm_period_val = fmt_period(assemblage_days) if assemblage_days > 0 else ""
-    cl_period_val = fmt_period(closing_days) if closing_days > 0 else ""
-    ext_months_val = fmt_period(closing_ext_months, "months") if closing_ext_months > 0 else ""
+    # Period values WITHOUT unit — the surrounding template text already has "days"/"months"
+    def _fmt_period_val(v):
+        return f"{convert_to_words(v).lower()} ({v})"
+    dd_period_val = _fmt_period_val(dd_days) if dd_days > 0 else ""
+    ga_period_val = _fmt_period_val(ga_days) if ga_days > 0 else ""
+    asm_period_val = _fmt_period_val(assemblage_days) if assemblage_days > 0 else ""
+    cl_period_val = _fmt_period_val(closing_days) if closing_days > 0 else ""
+    ext_months_val = _fmt_period_val(closing_ext_months) if closing_ext_months > 0 else ""
     ext_dep_val = fmt_dollar(ext_deposit) if ext_deposit > 0 else ""
     monthly_ext_val = fmt_dollar(monthly_closing_ext_deposit) if monthly_closing_ext_deposit > 0 else ""
     lr_val = fmt_dollar(legal_reimb_amount) if legal_reimb_amount > 0 else ""
-    lt_days_val = fmt_period(lease_term_days) if lease_term_days > 0 else ""
+    lt_days_val = _fmt_period_val(lease_term_days) if lease_term_days > 0 else ""
 
     p = []  # preview parts
     p.append('<div class="doc-scroll">')
@@ -671,7 +674,10 @@ with preview_col:
             f'Agreement). The Earnest Money shall be applied towards the Purchase Price at Closing.'
         )
 
-    p.append(f'<p class="section-item"><b>C.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Deposit.</span> {deposit_text}</p>')
+    if deposit_structure == DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD:
+        p.append(f'<p class="section-item"><b>C.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Deposit.</span> {deposit_text}</p>')
+    else:
+        p.append(f'<p class="section-item"><b>C.</b> &nbsp;&nbsp;&nbsp;{deposit_text}</p>')
 
     # -- Legal Reimbursement (optional) --
     if include_legal_reimb:
@@ -782,7 +788,10 @@ with preview_col:
     if include_delivered_vacant:
         lease_sentences.append(
             'Seller agrees to terminate, effective as of Closing, all leases such that the Property shall be delivered vacant at Closing, '
-            'and Seller shall be responsible for all monetary penalties/fees and or settlements related to the termination of leases.'
+            'and Seller shall be responsible for all monetary penalties/fees and or settlements related to the termination of leases. '
+            'If any tenant asserts a claims or files a lawsuit against the Property, the Seller, or the Purchaser in connection with or '
+            'related to such termination, the Seller shall be solely responsible for all costs and fees related to defending such claims '
+            'or lawsuits and shall indemnify, defend and hold the Purchaser harmless from any loss, cost, expenses and liability related thereto.'
         )
     if include_lease_termination:
         lt_tc = _v(lt_days_val, "[sixty (60)]")
@@ -809,7 +818,8 @@ with preview_col:
             'the Purchaser in good faith, that will be an indirect owner of the Property, whereby Seller shall be a passive investor '
             '(no day to day or major decision rights) in the Project, but with Seller being entitled to substantially the same '
             '&ldquo;limited partner&rdquo; returns on equity as the to be selected capital partner for the Project will receive '
-            '(&ldquo;Capital Partner&rdquo;).</p>'
+            '(&ldquo;Capital Partner&rdquo;). For the avoidance of doubt, the Seller shall not participate in any fees payable to '
+            'Purchaser or its affiliates that are approved by the Capital Partner or Project&rsquo;s lender.</p>'
         )
 
     # -- J. Confidentiality --
@@ -817,7 +827,9 @@ with preview_col:
         '<p class="section-item"><b>J.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Confidentiality.</span> '
         'During the Exclusivity Period and, while the Purchase Agreement is in effect, Purchaser and Seller shall keep all negotiations '
         'and communications between the parties regarding the potential purchase of the Property confidential and shall not disclose '
-        'any matter related to such negotiations and communications to any third party.</p>'
+        'any matter related to such negotiations and communications to any third party. The parties hereto may disclose this proposal '
+        'and the term hereof to their respective brokers, legal counsel, tax advisors, officers, directors, employees, partners, '
+        'investors or lenders, each of whom shall be directed to uphold similar standards of confidentiality.</p>'
     )
 
     # -- K. Governing Law --
@@ -831,7 +843,10 @@ with preview_col:
         '<p class="section-item"><b>L.</b> &nbsp;&nbsp;&nbsp;<span class="sec-label">Miscellaneous.</span> '
         'This proposal may be signed in counterparts with the same effect as if executed on a single document. This proposal constitutes '
         'the entire agreement between the parties concerning the subject matter hereof and supersedes all prior representations, '
-        'understandings or agreements, whether oral or written.</p>'
+        'understandings or agreements, whether oral or written. This proposal may be modified only by a written instrument executed '
+        'by both parties. Apart from the &ldquo;Exclusivity; Seller&rsquo;s Covenants and Confidentiality&rdquo; paragraphs above, '
+        'this proposal is not intended to be binding and shall not create any legal or equitable obligations unless and until a '
+        'definitive Purchase Agreement is executed.</p>'
     )
 
     # ==================== PAGE 3 ====================

@@ -345,14 +345,14 @@ def test_parcel_ids():
 
 
 def test_stale_value_guards():
-    # AdditionalDeposit stale on Monthly
+    # AdditionalDeposit IS replaced on Monthly (the Monthly template has an Additional Deposit placeholder)
     form = _base_form()
     form.deposit_structure = DepositStructure.MONTHLY_GOING_HARD
     form.additional_deposit = 99999
     form.monthly_release_amount = 5000
     body, _ = _generate_and_extract(form)
     vis = _get_visible_text(body)
-    _assert("Stale: AdditionalDeposit not injected on Monthly", "Ninety-Nine Thousand" not in vis)
+    _assert("Stale: AdditionalDeposit IS replaced on Monthly", "Ninety-Nine Thousand" in vis)
 
     # BrokerName stale on SellerPays
     form2 = _base_form()

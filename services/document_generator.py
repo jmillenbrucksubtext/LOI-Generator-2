@@ -393,6 +393,7 @@ class DocumentGenerator:
         if form.additional_deposit is not None and form.deposit_structure in (
             DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD,
             DepositStructure.DUE_DILIGENCE_GOING_HARD,
+            DepositStructure.MONTHLY_GOING_HARD,
         ):
             deposit_values.append(to_legal_dollar_string(form.additional_deposit))
         self._replace_sequential(body, "[Ten Thousand and 00/100 Dollars ($10,000.00)]", deposit_values, now)
