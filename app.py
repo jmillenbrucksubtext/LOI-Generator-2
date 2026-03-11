@@ -592,10 +592,13 @@ with preview_col:
 
     # -- Opening paragraph --
     seller_display = _v(seller_name, "[______________]")
-    # Use "collectively" when multiple company entities
+    # Use "collectively" when multiple company entities — shown as tracked change
     entity_count = len([e for e in st.session_state.entities if e["company_name"].strip()]) if sig_type == SignatureBlockType.COMPANY_ENTITY else 0
     if entity_count > 1:
-        seller_label = '(collectively, the &ldquo;Seller&rdquo;)'
+        seller_label = (
+            '<span class="tc-del">(&ldquo;Seller&rdquo;)</span>'
+            '<span class="tc-ins">(collectively, the &ldquo;Seller&rdquo;)</span>'
+        )
     else:
         seller_label = '(&ldquo;Seller&rdquo;)'
     p.append(
@@ -901,7 +904,7 @@ with preview_col:
     p.append('<p class="exhibit-center" style="margin-top:1em;">PARCEL ID NUMBER(S)</p>')
     parcel_list = "<br>".join(pid for pid in st.session_state.parcel_ids if pid.strip())
     if parcel_list:
-        p.append(f'<p class="exhibit-center" style="margin-top:0.5em;">{parcel_list}</p>')
+        p.append(f'<p class="exhibit-center" style="margin-top:0.5em;"><span class="tc-del">[]</span><span class="tc-ins">{parcel_list}</span></p>')
     else:
         p.append('<p class="exhibit-center" style="margin-top:0.5em;"><span class="tc-empty">[]</span></p>')
 
