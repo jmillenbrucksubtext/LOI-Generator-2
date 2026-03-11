@@ -275,7 +275,37 @@ class DocumentGenerator:
 
     def _handle_seller_rollover(self, body, form: LoiFormData, now: str):
         marker = "INSERT THIS PARAGRAGH IF WE ARE ALLOWING THE SELLER TO CONTRIBUTE LAND AND RECEIVE LP LEVEL RETURNS"
-        self._handle_optional_paragraph(body, marker, form.include_seller_rollover, now)
+        # Template has marker in its own paragraph, content in the next paragraph.
+        # Both have numId=0 (numbering disabled).
+        paragraphs = list(body.iterchildren(_qn("w:p")))
+        for i, para in enumerate(paragraphs):
+            text = _get_paragraph_text(para)
+            if marker not in text:
+                continue
+            # Always delete the marker paragraph
+            self._delete_entire_paragraph(para, now)
+            if form.include_seller_rollover and i + 1 < len(paragraphs):
+                # Keep the content paragraph; strip highlight and enable auto-numbering
+                content_para = paragraphs[i + 1]
+                # Remove numId=0 so it inherits auto-numbering from StandardL1
+                p_pr = content_para.find(_qn("w:pPr"))
+                if p_pr is not None:
+                    num_pr = p_pr.find(_qn("w:numPr"))
+                    if num_pr is not None:
+                        num_id = num_pr.find(_qn("w:numId"))
+                        if num_id is not None and num_id.get(_qn("w:val")) == "0":
+                            p_pr.remove(num_pr)
+                # Strip yellow highlighting from content runs
+                for run in content_para.iterchildren(_qn("w:r")):
+                    rpr = run.find(_qn("w:rPr"))
+                    if rpr is not None:
+                        hl = rpr.find(_qn("w:highlight"))
+                        if hl is not None:
+                            rpr.remove(hl)
+            elif i + 1 < len(paragraphs):
+                # Not included — delete the content paragraph too
+                self._delete_entire_paragraph(paragraphs[i + 1], now)
+            return
 
     def _handle_signature_block(self, body, form: LoiFormData, now: str):
         marker = "USE THE FOLLOWING SIGNATURE BLOCK STRUCTURE FOR PARCELS THAT ARE NOT OWNED BY INDIVIDUALS"
