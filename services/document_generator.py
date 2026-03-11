@@ -227,13 +227,25 @@ class DocumentGenerator:
             return
 
     def _handle_option_to_extend(self, body, form: LoiFormData, now: str):
-        if form.include_option_to_extend:
+        if not form.include_option_to_extend:
+            for para in list(body.iterchildren(_qn("w:p"))):
+                text = _get_paragraph_text(para)
+                if "Option to Extend." in text and "Extension Notice" in text:
+                    self._delete_entire_paragraph(para, now)
+                    return
             return
+        # Replace number of extensions and days per extension within the paragraph
         for para in list(body.iterchildren(_qn("w:p"))):
             text = _get_paragraph_text(para)
-            if "Option to Extend." in text and "Extension Notice" in text:
-                self._delete_entire_paragraph(para, now)
-                return
+            if "Option to Extend." not in text or "Extension Notice" not in text:
+                continue
+            if form.num_extension_options is not None and form.num_extension_options != 2:
+                self._replace_text_in_paragraph(
+                    para, "two (2)", _format_period(form.num_extension_options), now)
+            if form.extension_option_days is not None and form.extension_option_days != 60:
+                self._replace_text_in_paragraph(
+                    para, "sixty (60)", _format_period(form.extension_option_days), now)
+            return
 
     def _handle_lease_scenario(self, body, form: LoiFormData, now: str):
         marker_vacant = "REMOVE THE PRIOR SENTENCE AND USE THE FOLLOWING IF BEING DELIVERD VACANT"

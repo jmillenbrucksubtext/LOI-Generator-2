@@ -376,12 +376,13 @@ with form_col:
 
     # --- H. Option to Extend ---
     st.markdown('<div class="section-header">H. Option to Extend</div>', unsafe_allow_html=True)
-    include_option_extend = st.checkbox("Include Option to Extend", value=True)
-    if include_option_extend:
-        ext_deposit = money_input("Extension Deposit Amount ($)", default=5000.0, key="ext_deposit")
-        dollar_preview(ext_deposit)
-    else:
-        ext_deposit = 5000.0
+    col_num_ext, col_ext_days = st.columns(2)
+    with col_num_ext:
+        num_extensions = st.number_input("Number of Extension Options", min_value=1, max_value=10, value=2, step=1)
+    with col_ext_days:
+        ext_option_days = st.number_input("Days per Extension Option", min_value=1, max_value=365, value=60, step=1)
+    ext_deposit = money_input("Extension Deposit Amount ($)", default=5000.0, key="ext_deposit")
+    dollar_preview(ext_deposit)
 
     # --- I. Leases ---
     st.markdown('<div class="section-header">I. Leases</div>', unsafe_allow_html=True)
@@ -499,7 +500,9 @@ with form_col:
                 due_diligence_type=dd_type,
                 include_closing_extension=include_closing_ext,
                 commission_type=commission_type,
-                include_option_to_extend=include_option_extend,
+                include_option_to_extend=True,
+                num_extension_options=num_extensions,
+                extension_option_days=ext_option_days,
                 include_existing_leases=include_existing_leases,
                 include_delivered_vacant=include_delivered_vacant,
                 include_lease_termination=include_lease_termination,
@@ -784,18 +787,19 @@ with preview_col:
         _sec[0] += 1
         return f'<b>{letter}.</b> &nbsp;&nbsp;&nbsp;'
 
-    # -- Option to Extend (optional) --
-    if include_option_extend:
-        ext_dep_tc = _v(ext_dep_val, "[Five Thousand and 00/100 Dollars ($5,000.00)]")
-        p.append(
-            f'<p class="section-item">{_sl()}<span class="sec-label">Option to Extend.</span> '
-            f'Purchaser shall have a total of two (2) sixty (60) day extension options (each an &ldquo;Option to Extend&rdquo;). '
-            f'Each Option to Extend may be applied to the Due Diligence Period or the Governmental Approvals Period by delivering '
-            f'written notice to the Seller prior to the expiration of such term (&ldquo;Extension Notice&rdquo;) and delivering to the '
-            f'Title Company an amount equal to {ext_dep_tc} (&ldquo;Extension Deposit&rdquo;) within five (5) business days of the '
-            f'Extension Notice. The Extension Deposits shall be non-refundable to the Purchaser when made, subject to a default by '
-            f'Seller under the Purchase Agreement but shall be applicable to the Purchase Price.</p>'
-        )
+    # -- Option to Extend --
+    num_ext_tc = _v(_fmt_period_val(num_extensions), "two (2)")
+    ext_days_tc = _v(_fmt_period_val(ext_option_days), "sixty (60)")
+    ext_dep_tc = _v(ext_dep_val, "[Five Thousand and 00/100 Dollars ($5,000.00)]")
+    p.append(
+        f'<p class="section-item">{_sl()}<span class="sec-label">Option to Extend.</span> '
+        f'Purchaser shall have a total of {num_ext_tc} {ext_days_tc} day extension options (each an &ldquo;Option to Extend&rdquo;). '
+        f'Each Option to Extend may be applied to the Due Diligence Period or the Governmental Approvals Period by delivering '
+        f'written notice to the Seller prior to the expiration of such term (&ldquo;Extension Notice&rdquo;) and delivering to the '
+        f'Title Company an amount equal to {ext_dep_tc} (&ldquo;Extension Deposit&rdquo;) within five (5) business days of the '
+        f'Extension Notice. The Extension Deposits shall be non-refundable to the Purchaser when made, subject to a default by '
+        f'Seller under the Purchase Agreement but shall be applicable to the Purchase Price.</p>'
+    )
 
     # -- I. Leases --
     lease_sentences = []

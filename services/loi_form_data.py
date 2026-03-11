@@ -82,6 +82,8 @@ class LoiFormData:
     include_closing_extension: bool = False
     commission_type: CommissionType = CommissionType.SELLER_PAYS_LISTING_AGENT
     include_option_to_extend: bool = True
+    num_extension_options: Optional[int] = 2
+    extension_option_days: Optional[int] = 60
     include_existing_leases: bool = True
     include_delivered_vacant: bool = False
     include_lease_termination: bool = False
