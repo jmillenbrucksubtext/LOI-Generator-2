@@ -248,13 +248,50 @@ with form_col:
     seller_addr2 = st.text_input("Seller Address Line 2 (Owner Address)")
     seller_addr3 = st.text_input("Seller Address Line 3 (City, State Zip Code)")
 
-    ca, cb, cc = st.columns(3)
+    ca, cb = st.columns(2)
     with ca:
         attention_name = st.text_input("Attention Name", placeholder="John Smith")
     with cb:
         salutation = st.text_input("Salutation", placeholder="Mr. Smith")
-    with cc:
-        seller_name = st.text_input("Seller Name", placeholder="ABC Properties LLC")
+
+    # Seller type and names
+    sig_options = [e.value for e in SignatureBlockType]
+    sig_choice = st.radio("Seller Type", sig_options, index=0, horizontal=True)
+    sig_type = SignatureBlockType(sig_choice)
+
+    if sig_type == SignatureBlockType.INDIVIDUAL:
+        seller_name = st.text_input("Seller Name", placeholder="John Doe")
+        seller_name_sig = seller_name
+    else:
+        seller_name_sig = ""
+        st.markdown("**Seller / Entity Name(s)**")
+        entities_to_remove = None
+        for i, entity in enumerate(st.session_state.entities):
+            col_ent, col_btn = st.columns([6, 1])
+            with col_ent:
+                st.session_state.entities[i]["company_name"] = st.text_input(
+                    f"Entity {i+1}", value=entity["company_name"],
+                    key=f"entity_{i}", label_visibility="collapsed",
+                    placeholder=f"Entity name {i+1}",
+                )
+            with col_btn:
+                if len(st.session_state.entities) > 1:
+                    if st.button("X", key=f"rm_entity_{i}"):
+                        entities_to_remove = i
+        if entities_to_remove is not None:
+            st.session_state.entities.pop(entities_to_remove)
+            st.rerun()
+        if st.button("+ Add Seller / Entity"):
+            st.session_state.entities.append({"company_name": ""})
+            st.rerun()
+        # Derive seller_name for body text from entity names
+        entity_names = [e["company_name"] for e in st.session_state.entities if e["company_name"].strip()]
+        if len(entity_names) == 1:
+            seller_name = entity_names[0]
+        elif len(entity_names) > 1:
+            seller_name = " and ".join(entity_names)
+        else:
+            seller_name = ""
 
     # --- B. Purchase Price ---
     st.markdown('<div class="section-header">B. Purchase Price</div>', unsafe_allow_html=True)
@@ -272,11 +309,8 @@ with form_col:
         initial_deposit = money_input("Initial Deposit ($)", default=10000.0, key="initial_deposit")
         dollar_preview(initial_deposit)
     with cd2:
-        if deposit_structure in (DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD, DepositStructure.DUE_DILIGENCE_GOING_HARD):
-            additional_deposit = money_input("Additional Deposit ($)", default=10000.0, key="additional_deposit")
-            dollar_preview(additional_deposit)
-        else:
-            additional_deposit = 10000.0
+        additional_deposit = money_input("Additional Deposit ($)", default=10000.0, key="additional_deposit")
+        dollar_preview(additional_deposit)
         if deposit_structure == DepositStructure.MONTHLY_GOING_HARD:
             monthly_release = money_input("Monthly Release Amount ($)", default=5000.0, key="monthly_release")
             dollar_preview(monthly_release)
@@ -367,36 +401,6 @@ with form_col:
 
     include_negotiate_tenants = st.checkbox("Right to Negotiate with Existing Tenants")
     include_seller_rollover = st.checkbox("Seller Rollover Option")
-
-    # --- Signature ---
-    st.markdown('<div class="section-header">Signature</div>', unsafe_allow_html=True)
-    sig_options = [e.value for e in SignatureBlockType]
-    sig_choice = st.radio("Signature Block Type", sig_options, index=0, horizontal=True)
-    sig_type = SignatureBlockType(sig_choice)
-
-    if sig_type == SignatureBlockType.INDIVIDUAL:
-        seller_name_sig = st.text_input("Seller Name (Signature Line)")
-    else:
-        seller_name_sig = ""
-        st.markdown("**Company / Entity Name(s)**")
-        entities_to_remove = None
-        for i, entity in enumerate(st.session_state.entities):
-            col_ent, col_btn = st.columns([6, 1])
-            with col_ent:
-                st.session_state.entities[i]["company_name"] = st.text_input(
-                    f"Entity {i+1}", value=entity["company_name"],
-                    key=f"entity_{i}", label_visibility="collapsed"
-                )
-            with col_btn:
-                if len(st.session_state.entities) > 1:
-                    if st.button("X", key=f"rm_entity_{i}"):
-                        entities_to_remove = i
-        if entities_to_remove is not None:
-            st.session_state.entities.pop(entities_to_remove)
-            st.rerun()
-        if st.button("+ Add Entity"):
-            st.session_state.entities.append({"company_name": ""})
-            st.rerun()
 
     # --- Exhibit A ---
     st.markdown('<div class="section-header">Exhibit A</div>', unsafe_allow_html=True)
