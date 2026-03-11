@@ -381,15 +381,19 @@ class DocumentGenerator:
     # Placeholder Replacement
     # ------------------------------------------------------------------
     def _replace_placeholders(self, body, form: LoiFormData, now: str):
-        # Seller address lines (shared placeholder across 3 paragraphs)
-        addr_values = [v for v in [form.seller_address_line1, form.seller_address_line2, form.seller_address_line3] if v]
-        self._replace_sequential(body, "[____________________]", addr_values, now)
+        # Seller address lines — replace positionally (empty lines delete the paragraph)
+        self._replace_address_lines(body, "[____________________]",
+            [form.seller_address_line1, form.seller_address_line2, form.seller_address_line3], now)
 
         # Deposit amounts ($10K placeholder)
+        # Only include AdditionalDeposit when the selected scenario actually uses it
         deposit_values = []
         if form.initial_deposit is not None:
             deposit_values.append(to_legal_dollar_string(form.initial_deposit))
-        if form.additional_deposit is not None:
+        if form.additional_deposit is not None and form.deposit_structure in (
+            DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD,
+            DepositStructure.DUE_DILIGENCE_GOING_HARD,
+        ):
             deposit_values.append(to_legal_dollar_string(form.additional_deposit))
         self._replace_sequential(body, "[Ten Thousand and 00/100 Dollars ($10,000.00)]", deposit_values, now)
 
@@ -416,6 +420,9 @@ class DocumentGenerator:
                 if search in text:
                     self._replace_text_in_paragraph(para, search, replace, now)
 
+        # Parcel IDs — targeted Exhibit A search (avoids matching stray "[]" elsewhere)
+        self._replace_parcel_ids(body, form, now)
+
     def _replace_sequential(self, body, placeholder: str, values: list, now: str):
         if not values:
             return
@@ -428,6 +435,37 @@ class DocumentGenerator:
                 self._replace_text_in_paragraph(para, placeholder, values[idx], now)
                 idx += 1
                 text = _get_paragraph_text(para)
+
+    def _replace_address_lines(self, body, placeholder: str, values: list, now: str):
+        """Replace address line placeholders positionally (1:1 mapping).
+        Empty lines get their paragraph deleted instead of collapsing upward."""
+        idx = 0
+        for para in list(body.iterchildren(_qn("w:p"))):
+            if idx >= len(values):
+                break
+            text = _get_paragraph_text(para)
+            if placeholder not in text:
+                continue
+            if not values[idx]:
+                self._delete_entire_paragraph(para, now)
+            else:
+                self._replace_text_in_paragraph(para, placeholder, values[idx], now)
+            idx += 1
+
+    def _replace_parcel_ids(self, body, form: LoiFormData, now: str):
+        """Replace parcel ID placeholder only within the Exhibit A section,
+        avoiding false matches of '[]' elsewhere in the document."""
+        parcel_text = "\n".join(p for p in form.parcel_ids if p.strip())
+        if not parcel_text:
+            return
+        in_exhibit_a = False
+        for para in list(body.iterchildren(_qn("w:p"))):
+            text = _get_paragraph_text(para)
+            if "EXHIBIT A" in text or "Exhibit A" in text:
+                in_exhibit_a = True
+            if in_exhibit_a and "[]" in text:
+                self._replace_text_in_paragraph(para, "[]", parcel_text, now)
+                return
 
     def _build_replacement_map(self, form: LoiFormData) -> list:
         m = [("[Date]", form.date)]
@@ -448,7 +486,7 @@ class DocumentGenerator:
             m.append(("[_________________]", words))
             m.append(("[_________]", number))
 
-        if form.monthly_closing_extension_deposit is not None:
+        if form.include_closing_extension and form.monthly_closing_extension_deposit is not None:
             m.append((
                 "[Twenty-Five Thousand and 00/100 Dollars ($25,000.00)]",
                 to_legal_dollar_string(form.monthly_closing_extension_deposit),
@@ -458,27 +496,26 @@ class DocumentGenerator:
             m.append(("[one hundred twenty (120)]", _format_period(form.due_diligence_days)))
         if form.governmental_approvals_days is not None:
             m.append(("[one hundred fifty (150)]", _format_period(form.governmental_approvals_days)))
-        if form.assemblage_days is not None:
+        if form.due_diligence_type == DueDiligenceType.WITH_ASSEMBLAGE and form.assemblage_days is not None:
             m.append(("[ninety (90)]", _format_period(form.assemblage_days)))
         if form.closing_days is not None:
             m.append(("[thirty (30)]", _format_period(form.closing_days)))
-        if form.closing_extension_months is not None:
+        if form.include_closing_extension and form.closing_extension_months is not None:
             m.append(("[six (6)]", _format_period(form.closing_extension_months)))
 
-        m.append(("[May 31, 2026]", form.lease_end_date))
+        if form.include_existing_leases:
+            m.append(("[May 31, 2026]", form.lease_end_date))
 
-        if form.lease_termination_days is not None:
+        if form.include_lease_termination and form.lease_termination_days is not None:
             m.append(("[sixty (60)]", _format_period(form.lease_termination_days)))
 
-        if form.broker_name:
+        if form.commission_type == CommissionType.SUBTEXT_PAYS and form.broker_name:
             m.append(("[_____________]", form.broker_name))
 
         if form.signature_block_type == SignatureBlockType.INDIVIDUAL:
             m.append(("[SELLER NAME]", form.seller_name_signature))
 
-        parcel_text = "\n".join(p for p in form.parcel_ids if p.strip())
-        if parcel_text:
-            m.append(("[]", parcel_text))
+        # Parcel IDs are handled separately in _replace_parcel_ids (targeted Exhibit A search)
 
         return m
 

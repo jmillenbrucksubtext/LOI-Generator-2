@@ -28,8 +28,6 @@ class SignatureBlockType(Enum):
 @dataclass
 class SignatureEntity:
     company_name: str = ""
-    signer_name: str = ""
-    signer_title: str = ""
 
 
 @dataclass
