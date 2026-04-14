@@ -664,7 +664,7 @@ with preview_col:
             f'(as defined below), Purchaser determines not to pursue the transaction, Purchaser may terminate the Purchase Agreement, '
             f'and the Initial Deposit shall be fully and promptly refunded to Purchaser. Otherwise, upon waiver of the Due Diligence Period, '
             f'the Initial Deposit shall become non-refundable to the Purchaser, subject to (i) a default by Seller under the Purchase Agreement, '
-            f'or (ii) a casualty or a condemnation. Purchaser shall deposit an additional sum into escrow '
+            f'or (ii) a casualty or a condemnation, each as shall be further defined in the Purchase Agreement and Purchaser shall deposit an additional sum into escrow '
             f'with the Title Company in the amount of {add_tc} (&ldquo;Additional Deposit&rdquo;, which together with the Initial Deposit, '
             f'is referred to herein as the (&ldquo;Earnest Money&rdquo;). The Additional Deposit shall be non-refundable to the Purchaser '
             f'subject to (i) Purchaser&rsquo;s receipt of the Governmental Approvals during the Governmental Approvals Period (as defined below), '
@@ -684,7 +684,7 @@ with preview_col:
             f'into escrow with the Title Company in the amount of {add_tc} (the &ldquo;Additional Deposit&rdquo;, which together with '
             f'the Initial Deposit, is referred to herein as the &ldquo;Earnest Money&rdquo;) and shall be non-refundable to the Purchaser, '
             f'subject to (i) Purchaser&rsquo;s receipt of the Governmental Approvals during the Governmental Approvals Period (as defined below), '
-            f'(ii) a default by Seller under the Purchase Agreement, or (iii) a casualty or a condemnation. '
+            f'(ii) a default by Seller under the Purchase Agreement, or (iii) a casualty or a condemnation, each as shall be further defined in the Purchase Agreement. '
             f'On the 1st of each month following waiver of the Due Diligence Period, {monthly_tc} of the Earnest Money '
             f'(collectively, the &ldquo;Monthly Releases&rdquo;), shall become non-refundable to the Purchaser, subject to (i) a default by Seller '
             f'under the Purchase Agreement, or (ii) a casualty or a condemnation, and shall be immediately released to the Seller by Title Company. If Purchaser has not obtained the '
@@ -704,7 +704,7 @@ with preview_col:
         lr_tc = _v(lr_val, "[Five Thousand and 00/100 Dollars ($5,000.00)]")
         p.append(
             f'<p style="text-indent:2em;"><b>Legal Reimbursement Fee.</b> Upon mutual execution of the Purchase Agreement, '
-            f'{lr_tc} shall be immediately released to the Seller by the Title Company (&ldquo;Legal Reimbursement Fee&rdquo;) '
+            f'{lr_tc} of the Initial Deposit shall be immediately released to the Seller by the Title Company (&ldquo;Legal Reimbursement Fee&rdquo;) '
             f'and shall be non-refundable to the Purchaser, subject to a default by Seller under the Purchase Agreement, '
             f'a casualty or a condemnation.</p>'
         )
@@ -903,7 +903,7 @@ with preview_col:
     p.append('<p class="sig-block">Sincerely,</p>')
     p.append('<p class="sig-line" style="margin-top:2em;">Subtext Acquisitions, LLC</p>')
     p.append('<p class="sig-line" style="margin-top:2em;">____________________________________</p>')
-    p.append('<p class="sig-line">Richard Birner, Vice President of Land Acquisitions</p>')
+    p.append('<p class="sig-line">Richard Birner, SVP of Land Acquisitions</p>')
 
     # -- Seller signature --
     p.append('<p class="sig-block" style="margin-top:1.5em;">Agreed and Accepted by Seller this _____ day of ___________, 2026</p>')

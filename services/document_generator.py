@@ -763,6 +763,21 @@ class DocumentGenerator:
         for run in runs:
             para.remove(run)
 
+        # Disable auto-numbering so deleted paragraphs don't consume
+        # section letters (e.g. A, B, C) in the numbered list.
+        p_pr = para.find(_qn("w:pPr"))
+        if p_pr is not None:
+            # Check if paragraph inherits numbering from its style
+            p_style = p_pr.find(_qn("w:pStyle"))
+            if p_style is not None:
+                num_pr = p_pr.find(_qn("w:numPr"))
+                if num_pr is None:
+                    num_pr = etree.SubElement(p_pr, _qn("w:numPr"))
+                num_id = num_pr.find(_qn("w:numId"))
+                if num_id is None:
+                    num_id = etree.SubElement(num_pr, _qn("w:numId"))
+                num_id.set(_qn("w:val"), "0")
+
         del_elem = etree.SubElement(para, _qn("w:del"))
         del_elem.set(_qn("w:author"), self._author)
         del_elem.set(_qn("w:date"), now)

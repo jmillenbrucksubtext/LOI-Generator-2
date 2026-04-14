@@ -207,7 +207,7 @@ def build_ui_preview_text(form: LoiFormData) -> list:
             f'(as defined below), Purchaser determines not to pursue the transaction, Purchaser may terminate the Purchase Agreement, '
             f'and the Initial Deposit shall be fully and promptly refunded to Purchaser. Otherwise, upon waiver of the Due Diligence Period, '
             f'the Initial Deposit shall become non-refundable to the Purchaser, subject to (i) a default by Seller under the Purchase Agreement, '
-            f'or (ii) a casualty or a condemnation. Purchaser shall deposit an additional sum into escrow '
+            f'or (ii) a casualty or a condemnation, each as shall be further defined in the Purchase Agreement and Purchaser shall deposit an additional sum into escrow '
             f'with the Title Company in the amount of {add_dep} (\u201cAdditional Deposit\u201d, which together with the Initial Deposit, '
             f'is referred to herein as the (\u201cEarnest Money\u201d). The Additional Deposit shall be non-refundable to the Purchaser '
             f'subject to (i) Purchaser\u2019s receipt of the Governmental Approvals during the Governmental Approvals Period (as defined below), '
@@ -227,7 +227,7 @@ def build_ui_preview_text(form: LoiFormData) -> list:
             f'into escrow with the Title Company in the amount of {add_dep} (the \u201cAdditional Deposit\u201d, which together with '
             f'the Initial Deposit, is referred to herein as the \u201cEarnest Money\u201d) and shall be non-refundable to the Purchaser, '
             f'subject to (i) Purchaser\u2019s receipt of the Governmental Approvals during the Governmental Approvals Period (as defined below), '
-            f'(ii) a default by Seller under the Purchase Agreement, or (iii) a casualty or a condemnation. '
+            f'(ii) a default by Seller under the Purchase Agreement, or (iii) a casualty or a condemnation, each as shall be further defined in the Purchase Agreement. '
             f'On the 1st of each month following waiver of the Due Diligence Period, {monthly_rel} of the Earnest Money '
             f'(collectively, the \u201cMonthly Releases\u201d), shall become non-refundable to the Purchaser, subject to (i) a default by Seller '
             f'under the Purchase Agreement, or (ii) a casualty or a condemnation, and shall be immediately released to the Seller by Title Company. If Purchaser has not obtained the '
@@ -247,7 +247,7 @@ def build_ui_preview_text(form: LoiFormData) -> list:
         lr = fmt_dollar(form.legal_reimbursement_amount) if form.legal_reimbursement_amount and form.legal_reimbursement_amount > 0 else "[Five Thousand and 00/100 Dollars ($5,000.00)]"
         lines.append(
             f'Legal Reimbursement Fee. Upon mutual execution of the Purchase Agreement, '
-            f'{lr} shall be immediately released to the Seller by the Title Company (\u201cLegal Reimbursement Fee\u201d) '
+            f'{lr} of the Initial Deposit shall be immediately released to the Seller by the Title Company (\u201cLegal Reimbursement Fee\u201d) '
             f'and shall be non-refundable to the Purchaser, subject to a default by Seller under the Purchase Agreement, '
             f'a casualty or a condemnation.'
         )
@@ -423,7 +423,7 @@ def build_ui_preview_text(form: LoiFormData) -> list:
     # Signature
     lines.append("Sincerely,")
     lines.append("Subtext Acquisitions, LLC")
-    lines.append("Richard Birner, Vice President of Land Acquisitions")
+    lines.append("Richard Birner, SVP of Land Acquisitions")
     lines.append("Agreed and Accepted by Seller this _____ day of ___________, 2026")
 
     if form.signature_block_type == SignatureBlockType.INDIVIDUAL:

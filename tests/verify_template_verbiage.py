@@ -121,7 +121,7 @@ ALWAYS_PRESENT = [
     "If the foregoing is acceptable, please indicate by executing a copy of this proposal",
     "Sincerely,",
     "Subtext Acquisitions, LLC",
-    "Richard Birner, Vice President of Land Acquisitions",
+    "Richard Birner, SVP of Land Acquisitions",
     "EXHIBIT A",
     "DEPICTION OF PROPERTY",
     "PARCEL ID NUMBER(S)",
