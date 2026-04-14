@@ -581,12 +581,26 @@ class DocumentGenerator:
             header = section.header
             if header is None:
                 continue
+            last_para = None
             for para in header._element.iterchildren(_qn("w:p")):
                 text = _get_paragraph_text(para)
                 if "[ADDRESS OR STREET NAME]" in text and form.property_address:
                     self._replace_text_in_paragraph(para, "[ADDRESS OR STREET NAME]", form.property_address, now)
                 if "[DATE]" in text and form.date:
                     self._replace_text_in_paragraph(para, "[DATE]", form.date, now)
+                last_para = para
+
+            # Add spacing after the last header paragraph so it doesn't
+            # run into the body text.
+            if last_para is not None:
+                p_pr = last_para.find(_qn("w:pPr"))
+                if p_pr is None:
+                    p_pr = etree.SubElement(last_para, _qn("w:pPr"))
+                    last_para.insert(0, p_pr)
+                spacing = p_pr.find(_qn("w:spacing"))
+                if spacing is None:
+                    spacing = etree.SubElement(p_pr, _qn("w:spacing"))
+                spacing.set(_qn("w:after"), "200")
 
     # ------------------------------------------------------------------
     # Text replacement with tracked changes
