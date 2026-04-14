@@ -3,6 +3,7 @@ from datetime import datetime
 
 from services.loi_form_data import (
     LoiFormData,
+    PropertyPhoto,
     DepositStructure,
     DueDiligenceType,
     ClosingExtensionType,
@@ -429,12 +430,18 @@ with form_col:
         st.session_state.parcel_ids.append("")
         st.rerun()
 
-    uploaded_photo = st.file_uploader("Property Photo (Exhibit A)", type=["png", "jpg", "jpeg", "gif", "bmp"])
-    if uploaded_photo and uploaded_photo.size > 10 * 1024 * 1024:
-        st.error("Photo must be under 10 MB.")
-        uploaded_photo = None
-    elif uploaded_photo:
-        st.caption(f"{uploaded_photo.name} ({uploaded_photo.size / 1024:.0f} KB)")
+    uploaded_photos = st.file_uploader(
+        "Property Photo(s) (Exhibit A)", type=["png", "jpg", "jpeg", "gif", "bmp"],
+        accept_multiple_files=True,
+    )
+    valid_photos = []
+    for photo in uploaded_photos:
+        if photo.size > 10 * 1024 * 1024:
+            st.error(f"{photo.name} exceeds 10 MB limit.")
+        else:
+            valid_photos.append(photo)
+    if valid_photos:
+        st.caption(", ".join(f"{p.name} ({p.size / 1024:.0f} KB)" for p in valid_photos))
 
     # --- Prepared By ---
     st.markdown('<div class="section-header">Prepared By</div>', unsafe_allow_html=True)
@@ -496,9 +503,13 @@ with form_col:
                 seller_name_signature=seller_name_sig,
                 signature_entities=[SignatureEntity(company_name=e["company_name"]) for e in st.session_state.entities],
                 parcel_ids=list(st.session_state.parcel_ids),
-                property_photo_bytes=uploaded_photo.read() if uploaded_photo else None,
-                property_photo_content_type=uploaded_photo.type if uploaded_photo else None,
-                property_photo_filename=uploaded_photo.name if uploaded_photo else None,
+                property_photos=[
+                    PropertyPhoto(
+                        photo_bytes=p.read(),
+                        content_type=p.type or "image/jpeg",
+                        filename=p.name,
+                    ) for p in valid_photos
+                ],
                 deposit_structure=deposit_structure,
                 include_legal_reimbursement=include_legal_reimb,
                 due_diligence_type=dd_type,
@@ -935,12 +946,12 @@ with preview_col:
     else:
         p.append('<p class="exhibit-center" style="margin-top:0.5em;"><span class="tc-empty">[]</span></p>')
 
-    # -- Property photo --
-    if uploaded_photo:
-        photo_bytes = uploaded_photo.read()
-        uploaded_photo.seek(0)  # reset for document generation
+    # -- Property photos --
+    for photo in valid_photos:
+        photo_bytes = photo.read()
+        photo.seek(0)  # reset for document generation
         b64 = base64.b64encode(photo_bytes).decode()
-        mime = uploaded_photo.type or "image/jpeg"
+        mime = photo.type or "image/jpeg"
         p.append(f'<img class="photo-preview" src="data:{mime};base64,{b64}" alt="Property Photo">')
 
     p.append('</div>')  # end page 4

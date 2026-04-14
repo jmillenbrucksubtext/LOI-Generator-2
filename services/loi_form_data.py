@@ -32,6 +32,13 @@ class SignatureBlockType(Enum):
 
 
 @dataclass
+class PropertyPhoto:
+    photo_bytes: bytes = b""
+    content_type: str = "image/jpeg"
+    filename: str = "photo.jpg"
+
+
+@dataclass
 class SignatureEntity:
     company_name: str = ""
 
@@ -76,7 +83,9 @@ class LoiFormData:
     signature_entities: list = field(default_factory=lambda: [SignatureEntity()])
     parcel_ids: list = field(default_factory=lambda: [""])
 
-    # Property Photo
+    # Property Photos
+    property_photos: list = field(default_factory=list)  # list[PropertyPhoto]
+    # Legacy single-photo fields (still supported for backwards compatibility)
     property_photo_bytes: Optional[bytes] = None
     property_photo_content_type: Optional[str] = None
     property_photo_filename: Optional[str] = None

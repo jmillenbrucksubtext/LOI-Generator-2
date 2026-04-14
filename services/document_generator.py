@@ -21,6 +21,7 @@ from lxml import etree
 
 from services.loi_form_data import (
     LoiFormData,
+    PropertyPhoto,
     DepositStructure,
     DueDiligenceType,
     ClosingExtensionType,
@@ -83,9 +84,17 @@ class DocumentGenerator:
         # Step 3: Replace placeholders in headers
         self._replace_header_placeholders(doc, form, now)
 
-        # Step 4: Insert property photo
-        if form.property_photo_bytes and len(form.property_photo_bytes) > 0:
-            self._insert_property_photo(doc, body, form, now)
+        # Step 4: Insert property photos
+        photos = list(form.property_photos) if form.property_photos else []
+        # Support legacy single-photo fields
+        if not photos and form.property_photo_bytes and len(form.property_photo_bytes) > 0:
+            photos.append(PropertyPhoto(
+                photo_bytes=form.property_photo_bytes,
+                content_type=form.property_photo_content_type or "image/jpeg",
+                filename=form.property_photo_filename or "photo.jpg",
+            ))
+        if photos:
+            self._insert_property_photos(doc, body, form, photos, now)
 
         buf = io.BytesIO()
         doc.save(buf)
@@ -793,7 +802,8 @@ class DocumentGenerator:
     # ------------------------------------------------------------------
     # Photo insertion
     # ------------------------------------------------------------------
-    def _insert_property_photo(self, doc, body, form: LoiFormData, now: str):
+    def _insert_property_photos(self, doc, body, form: LoiFormData,
+                                photos: list, now: str):
         paragraphs = list(body.iterchildren(_qn("w:p")))
 
         # Find the parcel ID paragraph
@@ -818,108 +828,113 @@ class DocumentGenerator:
         if target_para is None:
             return
 
-        # Get image dimensions using Pillow
         from PIL import Image as PILImage
-        img = PILImage.open(io.BytesIO(form.property_photo_bytes))
-        px_width, px_height = img.size
-
-        # Convert to EMUs and scale
-        max_width_emu = 5_040_000   # ~5.5 inches
-        max_height_emu = 4_572_000  # ~5 inches
-
-        img_width_emu = int(px_width * 914400 / 96)
-        img_height_emu = int(px_height * 914400 / 96)
-
-        if img_width_emu > max_width_emu:
-            ratio = max_width_emu / img_width_emu
-            img_width_emu = max_width_emu
-            img_height_emu = int(img_height_emu * ratio)
-        if img_height_emu > max_height_emu:
-            ratio = max_height_emu / img_height_emu
-            img_height_emu = max_height_emu
-            img_width_emu = int(img_width_emu * ratio)
-
-        # Determine content type for the image part
-        content_type = form.property_photo_content_type or "image/jpeg"
-        if "png" in content_type:
-            img_type = "image/png"
-        elif "gif" in content_type:
-            img_type = "image/gif"
-        elif "bmp" in content_type:
-            img_type = "image/bmp"
-        else:
-            img_type = "image/jpeg"
-
-        # Add image as a related part using OPC layer
         from docx.opc.part import Part
         from docx.opc.constants import RELATIONSHIP_TYPE as RT
-
-        image_part_name = "/word/media/property_photo" + os.path.splitext(
-            form.property_photo_filename or "photo.jpg")[1]
-
-        # Create the image part
-        from docx.opc.package import OpcPackage
         from docx.opc.packuri import PackURI
 
-        part_name = PackURI(image_part_name)
-        image_part = Part(part_name, img_type, form.property_photo_bytes, None)
-        rel_id = doc.part.relate_to(image_part, RT.IMAGE)
+        insert_after = target_para
 
-        filename = form.property_photo_filename or "photo.jpg"
+        for idx, photo in enumerate(photos):
+            if not photo.photo_bytes:
+                continue
 
-        # Build the inline image XML
-        inline_xml = (
-            f'<wp:inline distT="0" distB="0" distL="0" distR="0" '
-            f'xmlns:wp="{WP_NS}" xmlns:a="{A_NS}" xmlns:pic="{PIC_NS}" xmlns:r="{R_NS}">'
-            f'  <wp:extent cx="{img_width_emu}" cy="{img_height_emu}"/>'
-            f'  <wp:effectExtent l="0" t="0" r="0" b="0"/>'
-            f'  <wp:docPr id="1" name="Property Photo"/>'
-            f'  <wp:cNvGraphicFramePr>'
-            f'    <a:graphicFrameLocks noChangeAspect="1"/>'
-            f'  </wp:cNvGraphicFramePr>'
-            f'  <a:graphic>'
-            f'    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
-            f'      <pic:pic>'
-            f'        <pic:nvPicPr>'
-            f'          <pic:cNvPr id="0" name="{filename}"/>'
-            f'          <pic:cNvPicPr/>'
-            f'        </pic:nvPicPr>'
-            f'        <pic:blipFill>'
-            f'          <a:blip r:embed="{rel_id}"/>'
-            f'          <a:stretch><a:fillRect/></a:stretch>'
-            f'        </pic:blipFill>'
-            f'        <pic:spPr>'
-            f'          <a:xfrm>'
-            f'            <a:off x="0" y="0"/>'
-            f'            <a:ext cx="{img_width_emu}" cy="{img_height_emu}"/>'
-            f'          </a:xfrm>'
-            f'          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
-            f'        </pic:spPr>'
-            f'      </pic:pic>'
-            f'    </a:graphicData>'
-            f'  </a:graphic>'
-            f'</wp:inline>'
-        )
-        inline_elem = etree.fromstring(inline_xml)
+            # Get image dimensions using Pillow
+            img = PILImage.open(io.BytesIO(photo.photo_bytes))
+            px_width, px_height = img.size
 
-        # Create blank paragraphs
-        blank1 = _make_empty_paragraph()
-        blank2 = _make_empty_paragraph()
+            # Convert to EMUs and scale
+            max_width_emu = 5_040_000   # ~5.5 inches
+            max_height_emu = 4_572_000  # ~5 inches
 
-        # Create centered image paragraph
-        img_para = etree.Element(_qn("w:p"))
-        ppr = etree.SubElement(img_para, _qn("w:pPr"))
-        jc = etree.SubElement(ppr, _qn("w:jc"))
-        jc.set(_qn("w:val"), "center")
+            img_width_emu = int(px_width * 914400 / 96)
+            img_height_emu = int(px_height * 914400 / 96)
 
-        run_elem = etree.SubElement(img_para, _qn("w:r"))
-        drawing = etree.SubElement(run_elem, _qn("w:drawing"))
-        drawing.append(inline_elem)
+            if img_width_emu > max_width_emu:
+                ratio = max_width_emu / img_width_emu
+                img_width_emu = max_width_emu
+                img_height_emu = int(img_height_emu * ratio)
+            if img_height_emu > max_height_emu:
+                ratio = max_height_emu / img_height_emu
+                img_height_emu = max_height_emu
+                img_width_emu = int(img_width_emu * ratio)
 
-        # Insert after target
-        target_para.addnext(blank1)
-        blank1.addnext(blank2)
-        blank2.addnext(img_para)
+            # Determine content type for the image part
+            content_type = photo.content_type or "image/jpeg"
+            if "png" in content_type:
+                img_type = "image/png"
+            elif "gif" in content_type:
+                img_type = "image/gif"
+            elif "bmp" in content_type:
+                img_type = "image/bmp"
+            else:
+                img_type = "image/jpeg"
+
+            # Add image as a related part using OPC layer
+            ext = os.path.splitext(photo.filename or "photo.jpg")[1]
+            image_part_name = f"/word/media/property_photo_{idx + 1}{ext}"
+
+            part_name = PackURI(image_part_name)
+            image_part = Part(part_name, img_type, photo.photo_bytes, None)
+            rel_id = doc.part.relate_to(image_part, RT.IMAGE)
+
+            filename = photo.filename or f"photo_{idx + 1}.jpg"
+            doc_pr_id = idx + 1
+
+            # Build the inline image XML
+            inline_xml = (
+                f'<wp:inline distT="0" distB="0" distL="0" distR="0" '
+                f'xmlns:wp="{WP_NS}" xmlns:a="{A_NS}" xmlns:pic="{PIC_NS}" xmlns:r="{R_NS}">'
+                f'  <wp:extent cx="{img_width_emu}" cy="{img_height_emu}"/>'
+                f'  <wp:effectExtent l="0" t="0" r="0" b="0"/>'
+                f'  <wp:docPr id="{doc_pr_id}" name="Property Photo {doc_pr_id}"/>'
+                f'  <wp:cNvGraphicFramePr>'
+                f'    <a:graphicFrameLocks noChangeAspect="1"/>'
+                f'  </wp:cNvGraphicFramePr>'
+                f'  <a:graphic>'
+                f'    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+                f'      <pic:pic>'
+                f'        <pic:nvPicPr>'
+                f'          <pic:cNvPr id="0" name="{filename}"/>'
+                f'          <pic:cNvPicPr/>'
+                f'        </pic:nvPicPr>'
+                f'        <pic:blipFill>'
+                f'          <a:blip r:embed="{rel_id}"/>'
+                f'          <a:stretch><a:fillRect/></a:stretch>'
+                f'        </pic:blipFill>'
+                f'        <pic:spPr>'
+                f'          <a:xfrm>'
+                f'            <a:off x="0" y="0"/>'
+                f'            <a:ext cx="{img_width_emu}" cy="{img_height_emu}"/>'
+                f'          </a:xfrm>'
+                f'          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+                f'        </pic:spPr>'
+                f'      </pic:pic>'
+                f'    </a:graphicData>'
+                f'  </a:graphic>'
+                f'</wp:inline>'
+            )
+            inline_elem = etree.fromstring(inline_xml)
+
+            # Create blank paragraphs
+            blank1 = _make_empty_paragraph()
+            blank2 = _make_empty_paragraph()
+
+            # Create centered image paragraph
+            img_para = etree.Element(_qn("w:p"))
+            ppr = etree.SubElement(img_para, _qn("w:pPr"))
+            jc = etree.SubElement(ppr, _qn("w:jc"))
+            jc.set(_qn("w:val"), "center")
+
+            run_elem = etree.SubElement(img_para, _qn("w:r"))
+            drawing = etree.SubElement(run_elem, _qn("w:drawing"))
+            drawing.append(inline_elem)
+
+            # Insert after current position
+            insert_after.addnext(blank1)
+            blank1.addnext(blank2)
+            blank2.addnext(img_para)
+            insert_after = img_para
 
 
 # ======================================================================
