@@ -246,6 +246,14 @@ with form_col:
     with c2:
         property_address = st.text_input("Property Address", placeholder="Address, City, State Zip Code")
 
+    use_custom_header = st.checkbox("Customize header address",
+                                     help="Use a shorter name when the property address is too long for the header")
+    if use_custom_header:
+        header_address = st.text_input("Header Address", placeholder="e.g. NW 17th St Portfolio",
+                                        value=property_address)
+    else:
+        header_address = property_address
+
     seller_addr1 = st.text_input("Seller Address Line 1 (Seller Entity / Individual)")
     seller_addr2 = st.text_input("Seller Address Line 2 (Owner Address)")
     seller_addr3 = st.text_input("Seller Address Line 3 (City, State Zip Code)")
@@ -483,6 +491,7 @@ with form_col:
                 seller_address_line3=seller_addr3,
                 attention_name=attention_name,
                 property_address=property_address,
+                header_address=header_address if header_address != property_address else "",
                 salutation=salutation,
                 seller_name=seller_name,
                 purchase_price=purchase_price if purchase_price > 0 else None,
@@ -723,7 +732,7 @@ with preview_col:
     # ==================== PAGE 2 ====================
     p.append('</div>')  # end page 1
     p.append('<div class="doc-page">')
-    p.append(f'<p class="cont-header">{_vn(property_address, "[Address, City, State]")}<br>{_vn(date_val, "[Date]")}<br>Page 2</p>')
+    p.append(f'<p class="cont-header">{_vn(header_address, "[Address, City, State]")}<br>{_vn(date_val, "[Date]")}<br>Page 2</p>')
 
     # -- D. Exclusivity --
     p.append(
@@ -902,7 +911,7 @@ with preview_col:
     # ==================== PAGE 3 ====================
     p.append('</div>')  # end page 2
     p.append('<div class="doc-page">')
-    p.append(f'<p class="cont-header">{_vn(property_address, "[Address, City, State]")}<br>{_vn(date_val, "[Date]")}<br>Page 3</p>')
+    p.append(f'<p class="cont-header">{_vn(header_address, "[Address, City, State]")}<br>{_vn(date_val, "[Date]")}<br>Page 3</p>')
 
     # -- Closing paragraph --
     p.append(
@@ -935,7 +944,7 @@ with preview_col:
     # ==================== PAGE 4: EXHIBIT A ====================
     p.append('</div>')  # end page 3
     p.append('<div class="doc-page">')
-    p.append(f'<p class="cont-header">{_vn(property_address, "[Address, City, State]")}<br>{_vn(date_val, "[Date]")}<br>Page 4</p>')
+    p.append(f'<p class="cont-header">{_vn(header_address, "[Address, City, State]")}<br>{_vn(date_val, "[Date]")}<br>Page 4</p>')
 
     p.append('<p class="exhibit-header">EXHIBIT A</p>')
     p.append('<p class="exhibit-center" style="margin-top:2em;">DEPICTION OF PROPERTY</p>')

@@ -585,7 +585,8 @@ class DocumentGenerator:
             for para in header._element.iterchildren(_qn("w:p")):
                 text = _get_paragraph_text(para)
                 if "[ADDRESS OR STREET NAME]" in text and form.property_address:
-                    self._replace_text_in_paragraph(para, "[ADDRESS OR STREET NAME]", form.property_address, now)
+                    addr = form.header_address if form.header_address else form.property_address
+                    self._replace_text_in_paragraph(para, "[ADDRESS OR STREET NAME]", addr, now)
                 if "[DATE]" in text and form.date:
                     self._replace_text_in_paragraph(para, "[DATE]", form.date, now)
                 last_para = para
