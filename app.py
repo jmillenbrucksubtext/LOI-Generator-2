@@ -221,6 +221,8 @@ st.markdown("#### LOI Generator")
 # ---------------------------------------------------------------------------
 # Session state
 # ---------------------------------------------------------------------------
+if "property_addresses" not in st.session_state:
+    st.session_state.property_addresses = [""]
 if "parcel_ids" not in st.session_state:
     st.session_state.parcel_ids = [""]
 if "entities" not in st.session_state:
@@ -239,18 +241,45 @@ with form_col:
 
     # --- Letter Details ---
     st.markdown('<div class="section-header">Letter Details</div>', unsafe_allow_html=True)
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        _now = datetime.now()
-        date_val = st.text_input("Date", value=f"{_now.strftime('%B')} {_now.day}, {_now.year}")
-    with c2:
-        property_address = st.text_input("Property Address", placeholder="Address, City, State Zip Code")
+    _now = datetime.now()
+    date_val = st.text_input("Date", value=f"{_now.strftime('%B')} {_now.day}, {_now.year}")
+
+    st.markdown("**Property Address(es)**")
+    addr_to_remove = None
+    for i, addr in enumerate(st.session_state.property_addresses):
+        col_a, col_ab = st.columns([6, 1])
+        with col_a:
+            st.session_state.property_addresses[i] = st.text_input(
+                f"Address {i+1}", value=addr,
+                key=f"prop_addr_{i}", placeholder="Address, City, State",
+                label_visibility="collapsed",
+            )
+        with col_ab:
+            if len(st.session_state.property_addresses) > 1:
+                if st.button("X", key=f"rm_addr_{i}"):
+                    addr_to_remove = i
+    if addr_to_remove is not None:
+        st.session_state.property_addresses.pop(addr_to_remove)
+        st.rerun()
+    if st.button("+ Add Property Address"):
+        st.session_state.property_addresses.append("")
+        st.rerun()
+
+    # Build combined property address string
+    addr_parts = [a.strip() for a in st.session_state.property_addresses if a.strip()]
+    if len(addr_parts) == 1:
+        property_address = addr_parts[0]
+    elif len(addr_parts) == 2:
+        property_address = f"{addr_parts[0]} and {addr_parts[1]}"
+    elif len(addr_parts) > 2:
+        property_address = ", ".join(addr_parts[:-1]) + ", and " + addr_parts[-1]
+    else:
+        property_address = ""
 
     use_custom_header = st.checkbox("Customize header address",
                                      help="Use a shorter name when the property address is too long for the header")
     if use_custom_header:
-        header_address = st.text_input("Header Address", placeholder="e.g. NW 17th St Portfolio",
-                                        value=property_address)
+        header_address = st.text_input("Header Address", placeholder="e.g. NW 17th St Portfolio")
     else:
         header_address = property_address
 
