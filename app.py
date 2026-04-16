@@ -204,6 +204,10 @@ st.markdown("""
     .tc-empty {
         color: #27ae60;
     }
+    /* Zoom wrapper inside scroll container */
+    .doc-zoom-wrapper {
+        transform-origin: top center;
+    }
     /* Make preview column sticky */
     [data-testid="stVerticalBlock"] > div:has(.doc-scroll) {
         position: sticky;
@@ -597,7 +601,12 @@ with form_col:
 
 # ============================ RIGHT: PREVIEW ==============================
 with preview_col:
-    st.markdown("**Live Preview**")
+    prev_header_col, prev_zoom_col = st.columns([1, 1])
+    with prev_header_col:
+        st.markdown("**Live Preview**")
+    with prev_zoom_col:
+        zoom_pct = st.slider("Zoom", min_value=50, max_value=150, value=100, step=10, format="%d%%", label_visibility="collapsed")
+    zoom_scale = zoom_pct / 100.0
 
     # --- Build tracked-change values ---
     pp_words_val = convert_to_words(int(purchase_price)) if purchase_price > 0 else ""
@@ -620,6 +629,8 @@ with preview_col:
 
     p = []  # preview parts
     p.append('<div class="doc-scroll">')
+    p.append(f'<div class="doc-zoom-wrapper" style="transform:scale({zoom_scale});'
+             f'width:{100/zoom_scale:.2f}%;margin:0 auto;">')
 
     # ==================== PAGE 1 ====================
     p.append('<div class="doc-page">')
@@ -993,6 +1004,7 @@ with preview_col:
         p.append(f'<img class="photo-preview" src="data:{mime};base64,{b64}" alt="Property Photo">')
 
     p.append('</div>')  # end page 4
+    p.append('</div>')  # end doc-zoom-wrapper
     p.append('</div>')  # end doc-scroll
 
     st.markdown("\n".join(p), unsafe_allow_html=True)
