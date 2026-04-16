@@ -208,6 +208,39 @@ st.markdown("""
     .doc-zoom-wrapper {
         transform-origin: top center;
     }
+    /* Zoom controls */
+    .zoom-controls {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+    .zoom-controls .zoom-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        border: 1px solid #555;
+        background: #333;
+        color: #ddd;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+    .zoom-controls .zoom-btn:hover {
+        background: #444;
+        border-color: #c1d100;
+        color: #fff;
+    }
+    .zoom-controls .zoom-label {
+        font-size: 0.8rem;
+        color: #aaa;
+        min-width: 36px;
+        text-align: center;
+    }
     /* Make preview column sticky */
     [data-testid="stVerticalBlock"] > div:has(.doc-scroll) {
         position: sticky;
@@ -234,6 +267,8 @@ if "entities" not in st.session_state:
 if "generated_file" not in st.session_state:
     st.session_state.generated_file = None
     st.session_state.generated_filename = None
+if "zoom_pct" not in st.session_state:
+    st.session_state.zoom_pct = 100
 
 # ---------------------------------------------------------------------------
 # Two-column layout: Form (left) | Preview (right)
@@ -605,8 +640,20 @@ with preview_col:
     with prev_header_col:
         st.markdown("**Live Preview**")
     with prev_zoom_col:
-        zoom_pct = st.slider("Zoom", min_value=50, max_value=150, value=100, step=10, format="%d%%", label_visibility="collapsed")
-    zoom_scale = zoom_pct / 100.0
+        zout, zlabel, zin = st.columns([1, 1, 1])
+        with zout:
+            if st.button("\u2212", key="zoom_out", help="Zoom out"):
+                st.session_state.zoom_pct = max(50, st.session_state.zoom_pct - 10)
+        with zlabel:
+            st.markdown(
+                f'<div style="text-align:center;color:#aaa;font-size:0.85rem;padding-top:6px;">'
+                f'{st.session_state.zoom_pct}%</div>',
+                unsafe_allow_html=True,
+            )
+        with zin:
+            if st.button("\u002B", key="zoom_in", help="Zoom in"):
+                st.session_state.zoom_pct = min(150, st.session_state.zoom_pct + 10)
+    zoom_scale = st.session_state.zoom_pct / 100.0
 
     # --- Build tracked-change values ---
     pp_words_val = convert_to_words(int(purchase_price)) if purchase_price > 0 else ""
