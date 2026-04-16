@@ -641,19 +641,20 @@ with form_col:
 
 # ============================ RIGHT: PREVIEW ==============================
 with preview_col:
-    header_col, zoom_col = st.columns([3, 1])
+    header_col, zlabel_col, zminus_col, zplus_col = st.columns([6, 1, 0.5, 0.5])
     with header_col:
         st.markdown("**Live Preview**")
-    with zoom_col:
-        st.markdown('<div class="zoom-bar"><span class="zoom-text">Zoom:</span>', unsafe_allow_html=True)
-        z_minus, z_plus = st.columns(2)
-        with z_minus:
-            if st.button("\u2212", key="zoom_out"):
-                st.session_state.zoom_pct = max(50, st.session_state.zoom_pct - 10)
-        with z_plus:
-            if st.button("+", key="zoom_in"):
-                st.session_state.zoom_pct = min(150, st.session_state.zoom_pct + 10)
-        st.markdown('</div>', unsafe_allow_html=True)
+    with zlabel_col:
+        st.markdown(
+            '<p style="text-align:right;color:#999;font-size:0.8rem;padding-top:6px;margin:0;">Zoom:</p>',
+            unsafe_allow_html=True,
+        )
+    with zminus_col:
+        if st.button("\u2212", key="zoom_out"):
+            st.session_state.zoom_pct = max(50, st.session_state.zoom_pct - 10)
+    with zplus_col:
+        if st.button("+", key="zoom_in"):
+            st.session_state.zoom_pct = min(150, st.session_state.zoom_pct + 10)
     zoom_scale = st.session_state.zoom_pct / 100.0
 
     # --- Build tracked-change values ---
