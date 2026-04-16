@@ -208,38 +208,43 @@ st.markdown("""
     .doc-zoom-wrapper {
         transform-origin: top center;
     }
-    /* Zoom controls */
-    .zoom-controls {
+    /* Zoom +/- buttons — compact, hide Streamlit button chrome */
+    .zoom-bar {
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        gap: 6px;
+        gap: 0;
+        margin-bottom: 4px;
     }
-    .zoom-controls .zoom-btn {
-        width: 28px;
-        height: 28px;
-        border-radius: 4px;
+    .zoom-bar .zoom-text {
+        font-size: 0.8rem;
+        color: #999;
+        margin-right: 6px;
+    }
+    .zoom-bar .stButton > button {
+        padding: 0 8px;
+        min-height: 26px;
+        height: 26px;
+        line-height: 26px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 0;
         border: 1px solid #555;
         background: #333;
         color: #ddd;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
     }
-    .zoom-controls .zoom-btn:hover {
+    .zoom-bar .stButton > button:hover {
         background: #444;
         border-color: #c1d100;
         color: #fff;
     }
-    .zoom-controls .zoom-label {
-        font-size: 0.8rem;
-        color: #aaa;
-        min-width: 36px;
-        text-align: center;
+    /* left button rounded on left, right button rounded on right */
+    .zoom-bar > div:first-of-type .stButton > button {
+        border-radius: 4px 0 0 4px;
+        border-right: none;
+    }
+    .zoom-bar > div:last-of-type .stButton > button {
+        border-radius: 0 4px 4px 0;
     }
     /* Make preview column sticky */
     [data-testid="stVerticalBlock"] > div:has(.doc-scroll) {
@@ -636,23 +641,19 @@ with form_col:
 
 # ============================ RIGHT: PREVIEW ==============================
 with preview_col:
-    prev_header_col, prev_zoom_col = st.columns([1, 1])
-    with prev_header_col:
+    header_col, zoom_col = st.columns([3, 1])
+    with header_col:
         st.markdown("**Live Preview**")
-    with prev_zoom_col:
-        zout, zlabel, zin = st.columns([1, 1, 1])
-        with zout:
-            if st.button("\u2212", key="zoom_out", help="Zoom out"):
+    with zoom_col:
+        st.markdown('<div class="zoom-bar"><span class="zoom-text">Zoom:</span>', unsafe_allow_html=True)
+        z_minus, z_plus = st.columns(2)
+        with z_minus:
+            if st.button("\u2212", key="zoom_out"):
                 st.session_state.zoom_pct = max(50, st.session_state.zoom_pct - 10)
-        with zlabel:
-            st.markdown(
-                f'<div style="text-align:center;color:#aaa;font-size:0.85rem;padding-top:6px;">'
-                f'{st.session_state.zoom_pct}%</div>',
-                unsafe_allow_html=True,
-            )
-        with zin:
-            if st.button("\u002B", key="zoom_in", help="Zoom in"):
+        with z_plus:
+            if st.button("+", key="zoom_in"):
                 st.session_state.zoom_pct = min(150, st.session_state.zoom_pct + 10)
+        st.markdown('</div>', unsafe_allow_html=True)
     zoom_scale = st.session_state.zoom_pct / 100.0
 
     # --- Build tracked-change values ---
