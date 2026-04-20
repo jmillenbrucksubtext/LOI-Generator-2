@@ -627,9 +627,9 @@ with form_col:
                     initials = f_initial + l_initial
                     date_str = datetime.now().strftime("%Y%m%d")
                     if initials:
-                        filename = f"LOI Draft_{entity_name}_{date_str} {initials}.docx"
+                        filename = f"LOI_{entity_name}_{date_str} {initials}.docx"
                     else:
-                        filename = f"LOI Draft_{entity_name}_{date_str}.docx"
+                        filename = f"LOI_{entity_name}_{date_str}.docx"
 
                     st.session_state.generated_file = result.getvalue()
                     st.session_state.generated_filename = filename
