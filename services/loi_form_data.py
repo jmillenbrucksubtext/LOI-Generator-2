@@ -51,6 +51,7 @@ class LoiFormData:
     seller_address_line2: str = ""
     seller_address_line3: str = ""
     attention_name: str = ""
+    omit_attention_line: bool = False
     property_address: str = ""
     header_address: str = ""  # If set, used in page headers instead of property_address
     salutation: str = ""

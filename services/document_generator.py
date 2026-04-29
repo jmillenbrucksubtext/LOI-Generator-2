@@ -438,6 +438,10 @@ class DocumentGenerator:
         self._replace_address_lines(body, "[____________________]",
             [form.seller_address_line1, form.seller_address_line2, form.seller_address_line3], now)
 
+        # Optionally remove the entire "Attn: ..." line from the header
+        if form.omit_attention_line:
+            self._delete_attention_line(body, now)
+
         # Deposit amounts ($10K placeholder)
         # Only include AdditionalDeposit when the selected scenario actually uses it
         deposit_values = []
@@ -505,6 +509,14 @@ class DocumentGenerator:
             else:
                 self._replace_text_in_paragraph(para, placeholder, values[idx], now)
             idx += 1
+
+    def _delete_attention_line(self, body, now: str):
+        """Delete the paragraph containing the 'Attn:' line from the header."""
+        for para in list(body.iterchildren(_qn("w:p"))):
+            text = _get_paragraph_text(para)
+            if "Attn:" in text or "Attn :" in text:
+                self._delete_entire_paragraph(para, now)
+                return
 
     def _replace_parcel_ids(self, body, form: LoiFormData, now: str):
         """Replace parcel ID placeholder only within the Exhibit A section,

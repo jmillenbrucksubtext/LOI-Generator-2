@@ -331,9 +331,18 @@ with form_col:
     seller_addr2 = st.text_input("Seller Address Line 2 (Owner Address)")
     seller_addr3 = st.text_input("Seller Address Line 3 (City, State Zip Code)")
 
+    omit_attention_line = st.checkbox(
+        "Remove Attention line",
+        help="Omit the 'Attn:' line from the proposal header entirely",
+    )
     ca, cb = st.columns(2)
     with ca:
-        attention_name = st.text_input("Attention Name", placeholder="John Smith")
+        if omit_attention_line:
+            attention_name = ""
+            st.text_input("Attention Name", value="", disabled=True,
+                          placeholder="(Attention line removed)")
+        else:
+            attention_name = st.text_input("Attention Name", placeholder="John Smith")
     with cb:
         salutation = st.text_input("Salutation", placeholder="Mr. Smith")
 
@@ -563,6 +572,7 @@ with form_col:
                 seller_address_line2=seller_addr2,
                 seller_address_line3=seller_addr3,
                 attention_name=attention_name,
+                omit_attention_line=omit_attention_line,
                 property_address=property_address,
                 header_address=header_address if header_address != property_address else "",
                 salutation=salutation,
@@ -698,7 +708,8 @@ with preview_col:
     p.append(f'<p class="addr-line">{_v(seller_addr1, "[____________________]")}</p>')
     p.append(f'<p class="addr-line">{_v(seller_addr2, "[____________________]")}</p>')
     p.append(f'<p class="addr-line">{_v(seller_addr3, "[____________________]")}</p>')
-    p.append(f'<p class="addr-line">Attn: {_v(attention_name, "[_______________]")}</p>')
+    if not omit_attention_line:
+        p.append(f'<p class="addr-line">Attn: {_v(attention_name, "[_______________]")}</p>')
 
     # -- Re: line --
     p.append(f'<p class="re-line"><b>Re: &nbsp;&nbsp;Proposal for the acquisition of {_v(property_address, "[Address, City, State]")} (&ldquo;Property&rdquo;)</b></p>')
