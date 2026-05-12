@@ -218,6 +218,10 @@ def build_ui_preview_text(form: LoiFormData) -> list:
             f'(except as expressly set forth in the Purchase Agreement). The Earnest Money shall be applied towards the Purchase Price at Closing.'
         )
     else:  # Monthly Going Hard
+        release_clause = (
+            ', and shall be immediately released to the Seller by Title Company'
+            if getattr(form, 'monthly_release_to_seller', True) else ''
+        )
         deposit_text = (
             f'Within five (5) business days following mutual execution of the Purchase Agreement '
             f'(as defined below), {init_dep} (the \u201cInitial Deposit\u201d) shall be delivered to First American Title Insurance, '
@@ -225,12 +229,13 @@ def build_ui_preview_text(form: LoiFormData) -> list:
             f'(as defined below), Purchaser determines not to pursue the transaction, Purchaser may terminate the Purchase Agreement and '
             f'the Initial Deposit shall be fully and promptly refunded to Purchaser. Otherwise, Purchaser shall deposit an additional sum '
             f'into escrow with the Title Company in the amount of {add_dep} (the \u201cAdditional Deposit\u201d, which together with '
-            f'the Initial Deposit, is referred to herein as the \u201cEarnest Money\u201d) and shall be non-refundable to the Purchaser, '
+            f'the Initial Deposit, is referred to herein as the \u201cEarnest Money\u201d). The Earnest Money shall be non-refundable to the Purchaser, '
             f'subject to (i) Purchaser\u2019s receipt of the Governmental Approvals during the Governmental Approvals Period (as defined below), '
             f'(ii) a default by Seller under the Purchase Agreement, or (iii) a casualty or a condemnation, each as shall be further defined in the Purchase Agreement. '
-            f'On the 1st of each month following waiver of the Due Diligence Period, {monthly_rel} of the Earnest Money '
+            f'Additionally, beginning on the 1st of each month following waiver of the Due Diligence Period, and continuing every thirty (30) days thereafter '
+            f'until the earlier of Closing or the termination of the Purchase Agreement, {monthly_rel} of the Earnest Money '
             f'(collectively, the \u201cMonthly Releases\u201d), shall become non-refundable to the Purchaser, subject to (i) a default by Seller '
-            f'under the Purchase Agreement, or (ii) a casualty or a condemnation, and shall be immediately released to the Seller by Title Company. If Purchaser has not obtained the '
+            f'under the Purchase Agreement, or (ii) a casualty or a condemnation{release_clause}. If Purchaser has not obtained the '
             f'Governmental Approvals during the Governmental Approvals Period, Purchaser may terminate the Purchase Agreement and the Earnest Money, '
             f'less the Monthly Releases paid to date, shall be fully and promptly refunded to Purchaser. Otherwise, the Earnest Money shall become '
             f'non-refundable to the Purchaser upon expiration of the Governmental Approvals Period (except as expressly set forth in the Purchase '
