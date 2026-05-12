@@ -94,6 +94,7 @@ class LoiFormData:
 
     # Scenario Options
     deposit_structure: DepositStructure = DepositStructure.GOVERNMENTAL_APPROVALS_GOING_HARD
+    monthly_release_to_seller: bool = True
     include_legal_reimbursement: bool = False
     due_diligence_type: DueDiligenceType = DueDiligenceType.STANDARD
     closing_extension_type: ClosingExtensionType = ClosingExtensionType.NONE

@@ -406,8 +406,15 @@ with form_col:
         if deposit_structure == DepositStructure.MONTHLY_GOING_HARD:
             monthly_release = money_input("Monthly Release Amount ($)", default=5000.0, key="monthly_release")
             dollar_preview(monthly_release)
+            monthly_release_to_seller = st.checkbox(
+                "Release Monthly Releases to Seller immediately",
+                value=True,
+                key="monthly_release_to_seller",
+                help="When checked, each Monthly Release is released directly to Seller by Title Company.",
+            )
         else:
             monthly_release = 5000.0
+            monthly_release_to_seller = True
 
     st.divider()
     include_legal_reimb = st.checkbox("Include Legal Reimbursement Fee")
@@ -603,6 +610,7 @@ with form_col:
                     ) for p in valid_photos
                 ],
                 deposit_structure=deposit_structure,
+                monthly_release_to_seller=monthly_release_to_seller,
                 include_legal_reimbursement=include_legal_reimb,
                 due_diligence_type=dd_type,
                 closing_extension_type=closing_ext_type,
@@ -795,6 +803,10 @@ with preview_col:
             f'(except as expressly set forth in the Purchase Agreement). The Earnest Money shall be applied towards the Purchase Price at Closing.'
         )
     else:  # Monthly Going Hard
+        release_clause = (
+            ', and shall be immediately released to the Seller by Title Company'
+            if monthly_release_to_seller else ''
+        )
         deposit_text = (
             f'Within five (5) business days following mutual execution of the Purchase Agreement '
             f'(as defined below), {init_tc} (the &ldquo;Initial Deposit&rdquo;) shall be delivered to First American Title Insurance, '
@@ -802,12 +814,13 @@ with preview_col:
             f'(as defined below), Purchaser determines not to pursue the transaction, Purchaser may terminate the Purchase Agreement and '
             f'the Initial Deposit shall be fully and promptly refunded to Purchaser. Otherwise, Purchaser shall deposit an additional sum '
             f'into escrow with the Title Company in the amount of {add_tc} (the &ldquo;Additional Deposit&rdquo;, which together with '
-            f'the Initial Deposit, is referred to herein as the &ldquo;Earnest Money&rdquo;) and shall be non-refundable to the Purchaser, '
+            f'the Initial Deposit, is referred to herein as the &ldquo;Earnest Money&rdquo;). The Earnest Money shall be non-refundable to the Purchaser, '
             f'subject to (i) Purchaser&rsquo;s receipt of the Governmental Approvals during the Governmental Approvals Period (as defined below), '
             f'(ii) a default by Seller under the Purchase Agreement, or (iii) a casualty or a condemnation, each as shall be further defined in the Purchase Agreement. '
-            f'On the 1st of each month following waiver of the Due Diligence Period, {monthly_tc} of the Earnest Money '
+            f'Additionally, beginning on the 1st of each month following waiver of the Due Diligence Period, and continuing every thirty (30) days thereafter '
+            f'until the earlier of Closing or the termination of the Purchase Agreement, {monthly_tc} of the Earnest Money '
             f'(collectively, the &ldquo;Monthly Releases&rdquo;), shall become non-refundable to the Purchaser, subject to (i) a default by Seller '
-            f'under the Purchase Agreement, or (ii) a casualty or a condemnation, and shall be immediately released to the Seller by Title Company. If Purchaser has not obtained the '
+            f'under the Purchase Agreement, or (ii) a casualty or a condemnation{release_clause}. If Purchaser has not obtained the '
             f'Governmental Approvals during the Governmental Approvals Period, Purchaser may terminate the Purchase Agreement and the Earnest Money, '
             f'less the Monthly Releases paid to date, shall be fully and promptly refunded to Purchaser. Otherwise, the Earnest Money shall become '
             f'non-refundable to the Purchaser upon expiration of the Governmental Approvals Period (except as expressly set forth in the Purchase '

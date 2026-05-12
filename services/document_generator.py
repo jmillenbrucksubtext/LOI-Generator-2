@@ -148,6 +148,17 @@ class DocumentGenerator:
                 ]
 
             self._rebuild_paragraph_with_scenario(para, text, segments, now)
+
+            if form.deposit_structure == DepositStructure.MONTHLY_GOING_HARD:
+                bracketed = "[, and shall be immediately released to the Seller by Title Company]"
+                if form.monthly_release_to_seller:
+                    self._replace_text_in_paragraph(
+                        para, bracketed,
+                        ", and shall be immediately released to the Seller by Title Company",
+                        now,
+                    )
+                else:
+                    self._replace_text_in_paragraph(para, bracketed, "", now)
             return
 
     def _handle_legal_reimbursement(self, body, form: LoiFormData, now: str):
@@ -619,7 +630,7 @@ class DocumentGenerator:
     # Text replacement with tracked changes
     # ------------------------------------------------------------------
     def _replace_text_in_paragraph(self, para, search_text: str, replace_text: str, now: str):
-        if not replace_text:
+        if not search_text:
             return
 
         runs = list(para.iterchildren(_qn("w:r")))
@@ -674,9 +685,10 @@ class DocumentGenerator:
         del_run = _make_deleted_run(search_text, match_rpr, self._author, now, self._next_rev_id())
         new_elements.append(del_run)
 
-        # 3. InsertedRun
-        ins_run = _make_inserted_run(replace_text, match_rpr, self._author, now, self._next_rev_id())
-        new_elements.append(ins_run)
+        # 3. InsertedRun (skip when replace_text is empty — delete-only)
+        if replace_text:
+            ins_run = _make_inserted_run(replace_text, match_rpr, self._author, now, self._next_rev_id())
+            new_elements.append(ins_run)
 
         # 4. After-text fragment
         if last_end > match_end:
