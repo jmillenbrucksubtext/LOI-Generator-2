@@ -10,6 +10,7 @@ from services.loi_form_data import (
     CommissionType,
     SignatureBlockType,
     SignatureEntity,
+    SubtextSigner,
 )
 from services.number_to_words import to_legal_dollar_string, convert_to_words
 from services.document_generator import DocumentGenerator
@@ -540,6 +541,17 @@ with form_col:
     if valid_photos:
         st.caption(", ".join(f"{p.name} ({p.size / 1024:.0f} KB)" for p in valid_photos))
 
+    # --- Subtext Signatory ---
+    st.markdown('<div class="section-header">Subtext Signatory</div>', unsafe_allow_html=True)
+    signer_options = [s.value for s in SubtextSigner]
+    signer_choice = st.radio(
+        "Who signs on behalf of Subtext?",
+        signer_options,
+        index=0,
+        help="Sets the name and title shown below the Subtext signature line.",
+    )
+    subtext_signer = SubtextSigner(signer_choice)
+
     # --- Prepared By ---
     st.markdown('<div class="section-header">Prepared By</div>', unsafe_allow_html=True)
     cpb1, cpb2 = st.columns(2)
@@ -624,6 +636,7 @@ with form_col:
                 include_right_to_negotiate_with_tenants=include_negotiate_tenants,
                 include_seller_rollover=include_seller_rollover,
                 signature_block_type=sig_type,
+                subtext_signer=subtext_signer,
                 prepared_by_first_name=prep_first,
                 prepared_by_last_name=prep_last,
             )
@@ -1036,7 +1049,7 @@ with preview_col:
     p.append('<p class="sig-block">Sincerely,</p>')
     p.append('<p class="sig-line" style="margin-top:2em;">Subtext Acquisitions, LLC</p>')
     p.append('<p class="sig-line" style="margin-top:2em;">____________________________________</p>')
-    p.append('<p class="sig-line">Richard Birner, SVP of Land Acquisitions</p>')
+    p.append(f'<p class="sig-line">{subtext_signer.value}</p>')
 
     # -- Seller signature --
     p.append('<p class="sig-block" style="margin-top:1.5em;">Agreed and Accepted by Seller this _____ day of ___________, 2026</p>')

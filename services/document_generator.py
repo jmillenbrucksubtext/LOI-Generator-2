@@ -27,6 +27,7 @@ from services.loi_form_data import (
     ClosingExtensionType,
     CommissionType,
     SignatureBlockType,
+    SubtextSigner,
 )
 from services.number_to_words import to_legal_dollar_string, convert_to_words
 
@@ -591,6 +592,14 @@ class DocumentGenerator:
 
         if form.signature_block_type == SignatureBlockType.INDIVIDUAL:
             m.append(("[SELLER NAME]", form.seller_name_signature))
+
+        # Subtext signatory below the signature line. Template defaults to
+        # Richard Birner; swap to the selected signer when it differs.
+        if form.subtext_signer != SubtextSigner.RICHARD_BIRNER:
+            m.append((
+                SubtextSigner.RICHARD_BIRNER.value,
+                form.subtext_signer.value,
+            ))
 
         # Parcel IDs are handled separately in _replace_parcel_ids (targeted Exhibit A search)
 

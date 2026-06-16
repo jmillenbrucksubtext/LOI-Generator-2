@@ -31,6 +31,12 @@ class SignatureBlockType(Enum):
     COMPANY_ENTITY = "Company / Entity"
 
 
+class SubtextSigner(Enum):
+    """Subtext signatory shown below the signature line on the proposal."""
+    RICHARD_BIRNER = "Richard Birner, SVP of Land Acquisitions"
+    TANNER_LAWRENCE = "Tanner Lawrence, Director of Land Acquisitions"
+
+
 @dataclass
 class PropertyPhoto:
     photo_bytes: bytes = b""
@@ -108,6 +114,7 @@ class LoiFormData:
     include_right_to_negotiate_with_tenants: bool = False
     include_seller_rollover: bool = False
     signature_block_type: SignatureBlockType = SignatureBlockType.INDIVIDUAL
+    subtext_signer: SubtextSigner = SubtextSigner.RICHARD_BIRNER
 
     # Prepared By
     prepared_by_first_name: str = ""
